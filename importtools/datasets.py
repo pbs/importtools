@@ -1,4 +1,5 @@
 import abc
+import csv
 
 
 class RODataSet(object):
@@ -411,3 +412,24 @@ class ArgsDataSet(MemoryDataSet):
         arg_groups = zip(*[iter(args)] * self.how_many)
         for arg_group in arg_groups:
             self.add(self.factory(*arg_group))
+
+
+class CSVDataSet(MemoryDataSet):
+    def __init__(self, factory, columns, has_header=True):
+        super(CSVDataSet, self).__init__()
+        self.factory = factory
+        self.columns = columns
+        self.has_header = has_header
+
+    def parse(self, source):
+
+        self.clear()
+        with open(source, 'r') as source_file:
+            content = csv.reader(source_file)
+
+            if self.has_header:
+                content.next()
+
+            for line in content:
+                params = [line[column] for column in self.columns]
+                self.add(self.factory(*params))
