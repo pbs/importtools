@@ -414,6 +414,23 @@ class ArgsDataSet(MemoryDataSet):
 
 
 class CSVDataSet(MemoryDataSet):
+    """
+    A :py:class:`DataSet` implementation that gets prepopulated from a
+    cvs file and instantiate a factory.
+
+    >>> import StringIO
+    >>> source = StringIO.StringIO('XXXX,YYYY,OOOO,MMMM,PPPP')
+
+    >>> from importtools.datasets import CSVDataSet
+    >>> csvds = CSVDataSet(
+    ...     lambda x, y: tuple([x, y]),
+    ...     columns=[1,4],
+    ...     has_header=False)
+    >>> csvds.populate(source)
+    >>> csvds.get(('YYYY', 'PPPP'))
+    ('YYYY', 'PPPP')
+    """
+
     def __init__(self, factory, columns, has_header=True):
         super(CSVDataSet, self).__init__()
         self.factory = factory
@@ -421,11 +438,14 @@ class CSVDataSet(MemoryDataSet):
         self.has_header = has_header
 
     def populate(self, source):
+        """Populate the dataset with instances returned by the factory.
+        The factory is called wyth columns index for each line of the csv file.
+
+        """
         self.clear()
-        with open(source, 'r') as source_file:
-            content = csv.reader(source_file)
-            if self.has_header:
-                content.next()
-            for line in content:
-                params = [line[column] for column in self.columns]
-                self.add(self.factory(*params))
+        content = csv.reader(source)
+        if self.has_header:
+            content.next()
+        for line in content:
+            params = [line[column] for column in self.columns]
+            self.add(self.factory(*params))
