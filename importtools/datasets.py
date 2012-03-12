@@ -421,15 +421,12 @@ class CSVDataSet(MemoryDataSet):
         self.columns = columns
         self.has_header = has_header
 
-    def parse(self, source):
-
+    def populate(self, source):
         self.clear()
         with open(source, 'r') as source_file:
             content = csv.reader(source_file)
-
             if self.has_header:
                 content.next()
-
             for line in content:
                 params = [line[column] for column in self.columns]
                 self.add(self.factory(*params))

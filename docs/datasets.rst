@@ -21,13 +21,10 @@ destination of the import.
    :undoc-members:
    :show-inheritance:
 
-There are three :py:class:`DataSet` implementations available, an in-memory
-simple :py:mod:`dict`-based :py:class:`MemoryDataSet` implementation, a
+There are two major implementations available: an in-memory simple
+:py:mod:`dict`-based :py:class:`MemoryDataSet` implementation and a
 :py:class:`DiffDataSet` implementation that acts as a :py:class:`DataSet`
-wrapper that remembers all changes, additions and removals and finally an
-``args`` based :py:class:`~.importtools.datasets.ArgsDataSet` that groups
-elements from a list in order to create
-:py:class:`~.importtools.importables.Importable` instances.
+wrapper that remembers all changes, additions and removals.
 
 .. autoclass:: MemoryDataSet
    :show-inheritance:
@@ -40,7 +37,18 @@ elements from a list in order to create
    .. automethod:: get_removed
    .. automethod:: get_changed
 
+There are also some format specific :py:class:`DataSet` implementations
+available like :py:class:`ArgsDataSet` that groups elements from a list in
+order to create :py:class:`~.importtools.importables.Importable` instances and
+a :py:class:`CSVDataSet` that can be used to parse CSV files and construct
+:py:class:`~.importtools.importables.Importable` instances.
+
 .. autoclass:: ArgsDataSet
+   :show-inheritance:
+
+   .. automethod:: populate
+
+.. autoclass:: CSVDataSet
    :show-inheritance:
 
    .. automethod:: populate
