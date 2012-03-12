@@ -399,8 +399,7 @@ class ArgsDataSet(MemoryDataSet):
         self.how_many = how_many
 
     def populate(self, args):
-        """
-        Populate the dataset with instances returned by the factory.
+        """Populate the dataset with instances returned by the factory.
 
         The factory is called wyth ``args`` values grouped together as dictated
         by the value of ``how_many`` property.
