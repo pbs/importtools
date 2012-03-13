@@ -1,3 +1,7 @@
+import heapq
+import itertools
+
+
 class FullSync(object):
     """
     An import strategy that adds the new elements from source in destination
@@ -220,3 +224,47 @@ class AdditiveSync(object):
                 destination.add(entry)
             elif existing.is_forced():
                 existing.make_imported()
+
+
+class ChunkedLoader(object):
+    def __init__(self, source_factory, destination_factory, chunk_hint=16384):
+        self.source_factory = source_factory
+        self.destination_factory = destination_factory
+        self.chunk_hint = chunk_hint
+
+    def loader(self, source_loader, destination_loader):
+        w_source = self.dataset_wrapper(source_loader, True)
+        w_destination = self.dataset_wrapper(destination_loader, False)
+        merged = heapq.merge(w_source, w_destination)
+
+        while True:
+            source = self.source_factory()
+            destination = self.destination_factory()
+            current_chunk = itertools.islice(merged, 0, self.chunk_hint)
+            for importable, from_source in current_chunk:
+                if from_source:
+                    source.add(importable)
+                else:
+                    destination.add(importable)
+            else:
+                raise StopIteration
+
+            try:
+                next_importable, next_from_source = merged.next()
+            except StopIteration:
+                pass
+            else:
+                if next_importable == importable:
+                    if next_from_source:
+                        source.add(next_importable)
+                    else:
+                        destination.add(next_importable)
+                else:
+                    v = [(next_importable, next_from_source)]
+                    merged = itertools.chain([v], merged)
+
+            yield source, destination
+
+    def dataset_wrapper(self, g, const):
+        for value in g:
+            yield value, const
