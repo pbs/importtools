@@ -419,16 +419,45 @@ class CSVDataSet(MemoryDataSet):
     cvs file and instantiate a factory.
 
     >>> import StringIO
-    >>> source = StringIO.StringIO('XXXX,YYYY,OOOO,MMMM,PPPP')
+    >>> source = StringIO.StringIO('''VAL6,VAL2,VAL7,VAL3
+    ... VAL5,VAL8,VAL3,VAL1
+    ... VAL6,VAL9,VAL0,VAL2''')
 
     >>> from importtools.datasets import CSVDataSet
     >>> csvds = CSVDataSet(
     ...     lambda x, y: tuple([x, y]),
-    ...     columns=[1,4],
+    ...     columns=[1,3],
     ...     has_header=False)
     >>> csvds.populate(source)
-    >>> csvds.get(('YYYY', 'PPPP'))
-    ('YYYY', 'PPPP')
+    >>> csvds.get((('VAL2','VAL3')))
+    ('VAL2', 'VAL3')
+
+    >>> import StringIO
+    >>> source = StringIO.StringIO('''VAL6,VAL2,VAL7,VAL3
+    ... VAL5,VAL8,VAL3,VAL1
+    ... VAL6,VAL9,VAL0,VAL2''')
+
+    >>> csvds = CSVDataSet(
+    ...     lambda x, y: tuple([x, y]),
+    ...     columns=[1,3],
+    ...     has_header=True)
+    >>> csvds.populate(source)
+    >>> csvds.get((('VAL8','VAL1')))
+    ('VAL8', 'VAL1')
+
+    >>> import StringIO
+    >>> source = StringIO.StringIO('''VAL6,VAL2,VAL7,VAL3
+    ... VAL5,VAL8,VAL3,VAL1
+    ... VAL6,VAL9,VAL0,VAL2''')
+
+    >>> csvds = CSVDataSet(
+    ...     lambda x, y, z: tuple([x, y, z]),
+    ...     columns=[1,2,3],
+    ...     has_header=False)
+    >>> csvds.populate(source)
+    >>> csvds.get(('VAL9', 'VAL0', 'VAL2'))
+    ('VAL9', 'VAL0', 'VAL2')
+
     """
 
     def __init__(self, factory, columns, has_header=True):
