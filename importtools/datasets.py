@@ -399,10 +399,9 @@ class ArgsDataSet(MemoryDataSet):
         self.how_many = how_many
 
     def populate(self, args):
-        """
-        Populate the dataset with instances returned by the factory.
+        """Populate the dataset with instances returned by the factory.
 
-        The factory is called wyth ``args`` values grouped together as dictated
+        The factory is called with ``args`` values grouped together as dictated
         by the value of ``how_many`` property.
 
         """
@@ -415,21 +414,83 @@ class ArgsDataSet(MemoryDataSet):
 
 
 class CSVDataSet(MemoryDataSet):
+    """
+    A :py:class:`DataSet` implementation that gets prepopulated from a ``CSV``
+    file and instantiate :py:class:`~.importtools.importables.Importable`
+    instances.
+
+    >>> import StringIO
+    >>> source = StringIO.StringIO('''
+    ... R1C0,R1C1,R1C2,R1C3
+    ... R2C0,R2C1,R2C2,R2C3
+    ... R3C0,R3C1,R3C2,R3C3
+    ... '''.strip())
+
+    The file is parsed skipping the header and the ``DataSet`` is populated
+    with the correct values:
+
+    >>> source.seek(0)
+    >>> csvds = CSVDataSet(
+    ...     lambda x, y: tuple([x, y]),
+    ...     columns=[1,3],
+    ...     has_header=True)
+    >>> csvds.populate(source)
+    >>> csvds.get((('R2C1', 'R2C3')))
+    ('R2C1', 'R2C3')
+    >>> csvds.get((('R3C1', 'R3C3')))
+    ('R3C1', 'R3C3')
+    >>> csvds.get((('R1C1', 'R1C3')), 'default')
+    'default'
+
+    The ``has_header`` flag can be used to avoid skipping the header:
+
+    >>> source.seek(0)
+    >>> from importtools.datasets import CSVDataSet
+    >>> csvds = CSVDataSet(
+    ...     lambda x, y: tuple([x, y]),
+    ...     columns=[1,3],
+    ...     has_header=False)
+    >>> csvds.populate(source)
+    >>> csvds.get((('R1C1', 'R1C3')))
+    ('R1C1', 'R1C3')
+    >>> csvds.get((('R2C1', 'R2C3')))
+    ('R2C1', 'R2C3')
+    >>> csvds.get((('R3C1', 'R3C3')))
+    ('R3C1', 'R3C3')
+
+    By default, ``has_header`` flag is set and the number of column can vary:
+
+    >>> source.seek(0)
+    >>> csvds = CSVDataSet(
+    ...     lambda x, y, z: tuple([x, y, z]),
+    ...     columns=[1,2,3])
+    >>> csvds.populate(source)
+    >>> csvds.get((('R2C1', 'R2C2', 'R2C3')))
+    ('R2C1', 'R2C2', 'R2C3')
+    >>> csvds.get((('R3C1', 'R3C2', 'R3C3')))
+    ('R3C1', 'R3C2', 'R3C3')
+    >>> csvds.get((('R1C1', 'R1C2', 'R1C3')), 'default')
+    'default'
+
+    """
+
     def __init__(self, factory, columns, has_header=True):
         super(CSVDataSet, self).__init__()
         self.factory = factory
         self.columns = columns
         self.has_header = has_header
 
-    def parse(self, source):
+    def populate(self, source):
+        """Populate the dataset with instances returned by the factory.
 
+        The factory is used to populate the :py:class:`DataSet` using the
+        values of the selected column for each line in the ``CSV`` file.
+
+        """
         self.clear()
-        with open(source, 'r') as source_file:
-            content = csv.reader(source_file)
-
-            if self.has_header:
-                content.next()
-
-            for line in content:
-                params = [line[column] for column in self.columns]
-                self.add(self.factory(*params))
+        content = csv.reader(source)
+        if self.has_header:
+            content.next()
+        for line in content:
+            params = [line[column] for column in self.columns]
+            self.add(self.factory(*params))
