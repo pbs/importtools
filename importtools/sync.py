@@ -4,8 +4,8 @@ class FullSync(object):
     and deletes from the destination the elements that are not present in the
     source anymore.  The import algorithm uses a
     :py:class:`~.importtools.datasets.RODataSet` implementation as the data
-    source and a :py:class:`~.importtools.datasets.DataSet` implementation as the
-    destination.
+    source and a :py:class:`~.importtools.datasets.DataSet` implementation as
+    the destination.
 
     The algorithm is summarized in the following table:
 
@@ -86,8 +86,8 @@ class FullSync(object):
     [<('i',) IMPORTED>]
 
     In case the destination contains a ``Forced``
-    :py:class:`~.importtools.importables.Importable` that is not available in the
-    source, the element will not be changed or deleted:
+    :py:class:`~.importtools.importables.Importable` that is not available in
+    the source, the element will not be changed or deleted:
 
     >>> destination = MemoryDataSet()
     >>> source = MemoryDataSet()
