@@ -230,8 +230,8 @@ class ChunkedLoader(object):
     """A loading strategy for running large imports as multiple smaller ones.
 
     The main functionality of this loader is to create and populate in parallel
-    two different ``DataSet``s with at most ``chunk_hint`` elements from two
-    ordered generators always with the smaller values:
+    two different ``DataSet`` instances with at most ``chunk_hint`` elements
+    from two ordered generators always with the smaller values:
 
     >>> cl = ChunkedLoader(set, set, 5)
     >>> loader = cl.loader([10, 20, 30, 40], [11, 12, 50, 60])
@@ -281,6 +281,7 @@ class ChunkedLoader(object):
 
     If one of the loader is empty, the algorithm should still function
     correctly:
+
     >>> loader = cl.loader([1, 2, 3, 4, 5, 6], [])
     >>> source, destination = loader.next()
     >>> sorted(source)
@@ -311,6 +312,13 @@ class ChunkedLoader(object):
         self.chunk_hint = chunk_hint
 
     def loader(self, source_loader, destination_loader):
+        """
+        A generator that can be used to load source and destination instances
+        of :py:class:`~.importtools.datasets.DataSet`
+
+        This generator yield source and destination tulpes.
+
+        """
         w_source = self.dataset_wrapper(source_loader, True)
         w_destination = self.dataset_wrapper(destination_loader, False)
         merged = heapq.merge(w_source, w_destination)
