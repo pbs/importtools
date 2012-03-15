@@ -12,3 +12,10 @@ different startegies can take into account the states in which an
 
 .. autoclass:: AdditiveSync
    :members:
+
+The library provides a special :py:class:`~.importtools.datasets.DataSet`
+loader that can be used to populate in parallel two ``DataSet`` instances in
+order to optimize a large import into multiple smaller ones.
+
+.. autoclass:: ChunkedLoader
+   :members:
