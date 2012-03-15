@@ -183,7 +183,7 @@ class Importable(object):
         """
 
     @abc.abstractmethod
-    def __eq__(self, other):
+    def __cmp__(self, other):
         """An **abstract method** that must check if two elements are the same.
 
         Two :py:class:`Importable` instances are equal if the *natural key* of
