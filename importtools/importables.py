@@ -8,7 +8,7 @@ class Importable(object):
     subclasses:
 
     * :py:meth:`__hash__`
-    * :py:meth:`__eq__`
+    * :py:meth:`__cmp__`
 
     At first, a newly created :py:class:`Importable` has no state attached to
     it and later can be in one of the following states:
@@ -47,7 +47,7 @@ class Importable(object):
     >>> class MockImportable(Importable):
     ...     def __hash__(self):
     ...         return 0
-    ...     def __eq__(self, other):
+    ...     def __cmp__(self, other):
     ...         return True
     ...     def __repr__(self):
     ...         return '<MockImportable %s>' % id(self)

@@ -24,4 +24,4 @@ and should be carried across by the import algorithm.
    :undoc-members:
 
    .. automethod:: __hash__
-   .. automethod:: __eq__
+   .. automethod:: __cmp__
