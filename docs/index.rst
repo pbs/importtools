@@ -28,6 +28,7 @@ API Reference
 
    importables
    datasets
+   loaders
    sync
 
 * :ref:`genindex`

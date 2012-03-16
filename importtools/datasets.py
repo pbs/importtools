@@ -1,14 +1,12 @@
 import abc
-import csv
 
 
-class RODataSet(object):
+class DataSet(object):
     """
-    An :py:mod:`abc` that represents a read-only set of
+    An :py:mod:`abc` that represents a mutable set of
     :py:class:`~.importtools.importables.Importable` instances.
 
     """
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def __iter__(self):
@@ -24,7 +22,7 @@ class RODataSet(object):
         Check if the dataset contains an equal
         :py:class:`~.importtools.importables.Importable` instance.
 
-        See :py:meth:`~.importtools.importables.Importable.__eq__` method for
+        See :py:meth:`~.importtools.importables.Importable.__cmp__` method for
         more details about the equality test between two
         :py:class:`~.importtools.importables.Importable` instances.
 
@@ -37,14 +35,6 @@ class RODataSet(object):
         the dataset or the default value if no such instances are found.
 
         """
-
-
-class DataSet(RODataSet):
-    """
-    An :py:mod:`abc` that represents a mutable set of
-    :py:class:`~.importtools.importables.Importable` instances.
-
-    """
 
     @abc.abstractmethod
     def add(self, importable):
@@ -62,14 +52,18 @@ class DataSet(RODataSet):
 
         """
 
+    @abc.abstractmethod
+    def __len__(self):
+        """``DataSet`` length."""
 
-class MemoryDataSet(dict, DataSet):
+
+class MemoryDataSet(DataSet):
     """
     A simple in-memory :py:class:`dict`-based :py:class:`DataSet`
     implementation.
 
     Since this particular :py:class:`DataSet` implementation only uses the
-    :py:meth:`__hash__` and :py:meth:`__eq__` methods of an
+    :py:meth:`__hash__` and :py:meth:`__cmp__` methods of an
     :py:class:`~.importtools.importables.Importable` :py:mod:`abc` we can
     exemplify this class functionality using :py:class:`tuple` objects:
 
@@ -111,9 +105,38 @@ class MemoryDataSet(dict, DataSet):
     >>> mds.get(item3, 'default')
     'default'
 
+    Initial data can be passed when constructing instances:
+
+    >>> mds = MemoryDataSet((item1, item2, item3))
+
     """
+    def __init__(self, data_loader=None):
+        data_iter = tuple()
+        if data_loader is not None:
+            data_iter = iter(data_loader)
+        self._dict = dict((i, i) for i in data_iter)
+        super(MemoryDataSet, self).__init__()
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __contains__(self, key):
+        return key in self._dict
+
+    def get(self, key, default=None):
+        return self._dict.get(key, default)
+
+    def pop(self, key, default=None):
+        return self._dict.pop(key, default)
+
     def add(self, importable):
-        self[importable] = importable
+        self._dict[importable] = importable
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __str__(self):
+        return str(self._dict)
 
 
 class DiffDataSet(DataSet):
@@ -147,8 +170,8 @@ class DiffDataSet(DataSet):
     ...         self.make_imported()
     ...     def __hash__(self):
     ...         return hash(self.args)
-    ...     def __eq__(self, other):
-    ...         return self.args == other.args
+    ...     def __cmp__(self, other):
+    ...         return cmp(self.args, other.args)
     ...     def __repr__(self):
     ...         smap = {1: 'IMPORTED', 2: 'FORCED', 3:'INVALID'}
     ...         return '<%r %s>' % (self.args, smap.get(self._status, 'N/A'))
@@ -297,8 +320,8 @@ class DiffDataSet(DataSet):
         super(DiffDataSet, self).__init__()
 
     def __iter__(self):
-        for iterable in self._wrapped:
-            yield iterable.register_listener(self.register_change)
+        for importable in self._wrapped:
+            yield importable.register_listener(self.register_change)
 
     def __contains__(self, importable):
         return importable in self._wrapped
@@ -372,125 +395,3 @@ class DiffDataSet(DataSet):
     def get_changed(self):
         """An iterable of all changed elements in the wrapped dataset."""
         return iter(self._changed)
-
-
-class ArgsDataSet(MemoryDataSet):
-    """
-    A :py:class:`DataSet` implementation that gets prepopulated from a
-    flattened list by grouping values together and instantiating a factory.
-    The primary use of this implementation is to create a datasets from command
-    line arguments.
-
-    This is a short example where each two consecutive values are grouped
-    together and used to create tuple instances from a factory function.
-
-    >>> from importtools.datasets import ArgsDataSet
-    >>> argsds = ArgsDataSet(lambda x, y: tuple([x, y]), 2)
-    >>> argsds.populate(['STATE1', 'CL1', 'STATE2', 'CL2'])
-    >>> argsds.get(('STATE1', 'CL1'))
-    ('STATE1', 'CL1')
-    >>> sorted(argsds)
-    [('STATE1', 'CL1'), ('STATE2', 'CL2')]
-
-    """
-    def __init__(self, factory, how_many=1):
-        super(ArgsDataSet, self).__init__()
-        self.factory = factory
-        self.how_many = how_many
-
-    def populate(self, args):
-        """Populate the dataset with instances returned by the factory.
-
-        The factory is called with ``args`` values grouped together as dictated
-        by the value of ``how_many`` property.
-
-        """
-        assert len(args) % self.how_many == 0
-        self.clear()
-        # http://docs.python.org/library/itertools.html#recipes
-        arg_groups = zip(*[iter(args)] * self.how_many)
-        for arg_group in arg_groups:
-            self.add(self.factory(*arg_group))
-
-
-class CSVDataSet(MemoryDataSet):
-    """
-    A :py:class:`DataSet` implementation that gets prepopulated from a ``CSV``
-    file and instantiate :py:class:`~.importtools.importables.Importable`
-    instances.
-
-    >>> import StringIO
-    >>> source = StringIO.StringIO('''
-    ... R1C0,R1C1,R1C2,R1C3
-    ... R2C0,R2C1,R2C2,R2C3
-    ... R3C0,R3C1,R3C2,R3C3
-    ... '''.strip())
-
-    The file is parsed skipping the header and the ``DataSet`` is populated
-    with the correct values:
-
-    >>> source.seek(0)
-    >>> csvds = CSVDataSet(
-    ...     lambda x, y: tuple([x, y]),
-    ...     columns=[1,3],
-    ...     has_header=True)
-    >>> csvds.populate(source)
-    >>> csvds.get((('R2C1', 'R2C3')))
-    ('R2C1', 'R2C3')
-    >>> csvds.get((('R3C1', 'R3C3')))
-    ('R3C1', 'R3C3')
-    >>> csvds.get((('R1C1', 'R1C3')), 'default')
-    'default'
-
-    The ``has_header`` flag can be used to avoid skipping the header:
-
-    >>> source.seek(0)
-    >>> from importtools.datasets import CSVDataSet
-    >>> csvds = CSVDataSet(
-    ...     lambda x, y: tuple([x, y]),
-    ...     columns=[1,3],
-    ...     has_header=False)
-    >>> csvds.populate(source)
-    >>> csvds.get((('R1C1', 'R1C3')))
-    ('R1C1', 'R1C3')
-    >>> csvds.get((('R2C1', 'R2C3')))
-    ('R2C1', 'R2C3')
-    >>> csvds.get((('R3C1', 'R3C3')))
-    ('R3C1', 'R3C3')
-
-    By default, ``has_header`` flag is set and the number of column can vary:
-
-    >>> source.seek(0)
-    >>> csvds = CSVDataSet(
-    ...     lambda x, y, z: tuple([x, y, z]),
-    ...     columns=[1,2,3])
-    >>> csvds.populate(source)
-    >>> csvds.get((('R2C1', 'R2C2', 'R2C3')))
-    ('R2C1', 'R2C2', 'R2C3')
-    >>> csvds.get((('R3C1', 'R3C2', 'R3C3')))
-    ('R3C1', 'R3C2', 'R3C3')
-    >>> csvds.get((('R1C1', 'R1C2', 'R1C3')), 'default')
-    'default'
-
-    """
-
-    def __init__(self, factory, columns, has_header=True):
-        super(CSVDataSet, self).__init__()
-        self.factory = factory
-        self.columns = columns
-        self.has_header = has_header
-
-    def populate(self, source):
-        """Populate the dataset with instances returned by the factory.
-
-        The factory is used to populate the :py:class:`DataSet` using the
-        values of the selected column for each line in the ``CSV`` file.
-
-        """
-        self.clear()
-        content = csv.reader(source)
-        if self.has_header:
-            content.next()
-        for line in content:
-            params = [line[column] for column in self.columns]
-            self.add(self.factory(*params))
