@@ -1,9 +1,9 @@
 import abc
 
 
-class DataSet(object):
+class RODataSet(object):
     """
-    An :py:mod:`abc` that represents a mutable set of
+    An :py:mod:`abc` that represents a read-only set of
     :py:class:`~.importtools.importables.Importable` instances.
 
     """
@@ -37,6 +37,18 @@ class DataSet(object):
         """
 
     @abc.abstractmethod
+    def __len__(self):
+        """``DataSet`` length."""
+
+
+class DataSet(RODataSet):
+    """
+    An :py:mod:`abc` that represents a mutable set of
+    :py:class:`~.importtools.importables.Importable` instances.
+
+    """
+
+    @abc.abstractmethod
     def add(self, importable):
         """
         Add the :py:class:`~.importtools.importables.Importable` in the dataset
@@ -51,10 +63,6 @@ class DataSet(object):
         :py:class:`~.importtools.importables.Importable` from the dataset.
 
         """
-
-    @abc.abstractmethod
-    def __len__(self):
-        """``DataSet`` length."""
 
 
 class MemoryDataSet(DataSet):

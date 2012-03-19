@@ -2,9 +2,19 @@ Data Sets
 =========
 .. py:currentmodule:: importtools.datasets
 
-The library provides a :py:class:`DataSet` abstractions that can be used in the import
-system to provide a source and a destination for the
-:py:class:`~.importtools.importables.Importable` elements.  
+The library provides a :py:class:`DataSet` abstractions that can be used in the
+import :py:class:`~.importtools.importables.Importable` elements.  The first
+one is a read-only :py:class:`RODataSet` that can be used as the source of the
+data and a fully mutable :py:class:`DataSet` that can be used as the source or
+the destination of the import.
+
+.. autoclass:: RODataSet
+   :members:
+   :undoc-members:
+
+   .. automethod:: __contains__
+   .. automethod:: __iter__
+   .. automethod:: __len__
 
 .. autoclass:: DataSet
    :members:
