@@ -60,7 +60,9 @@ class ArgsLoader(Loader):
         # http://docs.python.org/library/itertools.html#recipes
         arg_groups = zip(*[iter(source)] * self.how_many)
         for arg_group in arg_groups:
-            yield self.factory(*arg_group)
+            value = self.factory(*arg_group)
+            if value is not None:
+                yield value
 
     def __iter__(self):
         return self._iter()
