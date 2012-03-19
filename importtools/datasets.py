@@ -36,10 +36,6 @@ class RODataSet(object):
 
         """
 
-    @abc.abstractmethod
-    def __len__(self):
-        """``DataSet`` length."""
-
 
 class DataSet(RODataSet):
     """
@@ -63,6 +59,10 @@ class DataSet(RODataSet):
         :py:class:`~.importtools.importables.Importable` from the dataset.
 
         """
+
+    @abc.abstractmethod
+    def __len__(self):
+        """``DataSet`` length."""
 
 
 class MemoryDataSet(DataSet):

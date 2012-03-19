@@ -14,12 +14,13 @@ the destination of the import.
 
    .. automethod:: __contains__
    .. automethod:: __iter__
-   .. automethod:: __len__
 
 .. autoclass:: DataSet
    :members:
    :undoc-members:
    :show-inheritance:
+
+   .. automethod:: __len__
 
 There are two major implementations available: an in-memory simple
 :py:mod:`dict`-based :py:class:`MemoryDataSet` implementation and a
