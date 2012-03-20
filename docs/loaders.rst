@@ -1,6 +1,7 @@
 Data Loaders
 ============
-.. py:currentmodule:: importtools.loaders
+
+.. py:module:: importtools.loaders
 
 There are also some format specific :py:class:`Loader` implementations
 available like :py:class:`ArgsLoader` that groups elements from a list in

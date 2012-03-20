@@ -1,6 +1,7 @@
 Importable Elements
 ===================
-.. py:currentmodule:: importtools.importables
+
+.. py:module:: importtools.importables
 
 This library defines an :py:class:`Importable` abstraction that represents
 elements that can be imported. This type of elements have 2 components:

@@ -1,6 +1,7 @@
 Data Sets
 =========
-.. py:currentmodule:: importtools.datasets
+
+.. py:module:: importtools.datasets
 
 The library provides a :py:class:`DataSet` abstractions that can be used in the
 import :py:class:`~.importtools.importables.Importable` elements.  The first
