@@ -300,44 +300,35 @@ class DiffDataSet(MemoryDataSet):
 
     def __str__(self):
         result = ''
-
         added_count = len(self._added)
         if added_count > 0:
             result += 'To be added: %s\n' % added_count
             result += '\n'.join(sorted(repr(x) for x in self.get_added()))
-
         removed_count = len(self._removed)
         if removed_count > 0:
             result += '\nTo be removed: %s\n' % removed_count
             result += '\n'.join(sorted(repr(x) for x in self.get_removed()))
-
         changed_count = len(self._changed)
         if changed_count > 0:
             result += '\nTo be changed: %s\n' % changed_count
             result += '\n'.join(sorted(repr(x) for x in self.get_changed()))
-
         if (added_count + removed_count + changed_count) == 0:
             result += 'No elements were affected.'
-
         return result
 
     def add(self, importable):
-        super(DiffDataSet, self).add(
-            importable.register_listener(self.rc)
-        )
-
         if importable in self._removed:
             self._removed.discard(importable)
             self._changed.add(importable)
         else:
             self._added.add(importable)
+        super(DiffDataSet, self).add(importable.register_listener(self.rc))
 
     def pop(self, importable):
         if importable in self._added:
             self._added.discard(importable)
         else:
             self._removed.add(importable)
-
         return super(DiffDataSet, self).pop(importable)
 
     def register_change(self, importable):
