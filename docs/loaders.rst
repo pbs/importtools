@@ -4,8 +4,8 @@ Data Loaders
 .. py:module:: importtools.loaders
 
 There are also some format specific loaders available available like
-:py:function:`args_loader` that groups elements from a list in order to
-construct instances and a :py:function:`csv_loader` that can be used to parse
+:py:func:`args_loader` that groups elements from a list in order to
+construct instances and a :py:func:`csv_loader` that can be used to parse
 CSV files.
 
 .. function:: args_loader
