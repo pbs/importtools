@@ -159,50 +159,31 @@ def chunked_loader(ordered_iter1, ordered_iter2, chunk_hint=16384):
     """
     i1 = _iter_const(ordered_iter1, True)
     i2 = _iter_const(ordered_iter2, False)
-    merged = heapq.merge(i1, i2)
-    eq = lambda x, y: x[0] == y[0]
-    chunk, iterator = _get_chunk(merged, chunk_hint, eq)
-    while chunk:
+    iterator = heapq.merge(i1, i2)
+    while True:
         i1_elemens = list()
         i2_elemens = list()
-        for element, from_iter1 in chunk:
+        current_chunk = itertools.islice(iterator, chunk_hint)
+        for element, from_iter1 in current_chunk:
             if from_iter1:
                 i1_elemens.append(element)
             else:
                 i2_elemens.append(element)
-        del chunk
+        for next_element, next_from_iter1 in iterator:
+            if next_element == element:
+                if next_from_iter1:
+                    i1_elemens.append(next_element)
+                else:
+                    i2_elemens.append(next_element)
+            else:
+                e = (next_element, next_from_iter1)
+                iterator = itertools.chain([e], iterator)
+                break
+        if not (i1_elemens or i2_elemens):
+            break
         yield i1_elemens, i2_elemens
-        chunk, iterator = _get_chunk(iterator, chunk_hint, eq)
 
 
 def _iter_const(g, const):
     for value in g:
         yield value, const
-
-
-def _get_chunk(iterator, chunk_hint, eq=lambda x, y: x == y):
-    """
-    Return a list from the iterator. Once the list size is equal to
-    ``chunk_hint`` it continues to add elements while they are equal to the
-    last one added. The equality test is done using ``eq``.
-
-    """
-    result = []
-
-    try:
-        # Test if the iterator is empty
-        iterator = itertools.chain([iterator.next()], iterator)
-    except StopIteration:
-        return result, iterator
-
-    current_chunk = itertools.islice(iterator, chunk_hint)
-    for element in current_chunk:
-        result.append(element)
-    for next_element in iterator:
-        if eq(next_element, element):
-            result.append(next_element)
-        else:
-            iterator = itertools.chain([next_element], iterator)
-            break
-
-    return result, iterator
