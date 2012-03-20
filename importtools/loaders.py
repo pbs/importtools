@@ -36,7 +36,7 @@ def csv_loader(source, factory, columns, has_header=True):
     A loader that yields values from a ``CSV`` ``source`` file object by
     calling the ``factory`` with the values specified in the ``columns``.
 
-    .. note:: The columns are 0 indexed.
+    .. note:: The columns are ``0`` indexed.
 
     >>> import StringIO
     >>> source = StringIO.StringIO('''
