@@ -8,9 +8,9 @@ There are also some format specific loaders available available like
 construct instances and a :py:func:`csv_loader` that can be used to parse
 CSV files.
 
-.. function:: args_loader
+.. autofunction:: args_loader
 
-.. function:: csv_loader
+.. autofunction:: csv_loader
 
 The library provides a special *loader* function that can be used to populate
 in parallel two ``DataSet`` instances in order to optimize a large import into
