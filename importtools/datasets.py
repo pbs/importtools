@@ -60,10 +60,6 @@ class DataSet(RODataSet):
 
         """
 
-    @abc.abstractmethod
-    def __len__(self):
-        """``DataSet`` length."""
-
 
 class MemoryDataSet(dict, DataSet):
     """
@@ -129,23 +125,17 @@ class MemoryDataSet(dict, DataSet):
         self[importable] = importable
 
 
-class DiffDataSet(DataSet):
+class DiffDataSet(MemoryDataSet):
     """
-    A :py:class:`DataSet` wrapper that remembers all the changes, additions and
-    removals done to the wrapped dataset trough itself.
+    A :py:class:`DataSet` implementation that remembers all the changes,
+    additions and removals done to it.
 
     Using a :py:class:`DiffDataSet` as the destination of the import algorithm
     allows optimal persistence of the changes by grouping them in a way suited
     for batch processing.
 
     In order to exemplify this class functionality we start with a
-    :py:class:`MemoryDataSet` instance that we wrap:
-
-    .. testsetup::
-
-    >>> from importtools.datasets import MemoryDataSet, DiffDataSet
-    >>> mds = MemoryDataSet()
-    >>> dds = DiffDataSet(mds)
+    instance that we prepopulate:
 
     An :py:class:`~.importtools.importables.Importable` mock is needed to
     populate the datasets:
@@ -166,26 +156,22 @@ class DiffDataSet(DataSet):
     ...         smap = {1: 'IMPORTED', 2: 'FORCED', 3:'INVALID'}
     ...         return '<%r %s>' % (self.args, smap.get(self._status, 'N/A'))
 
-    It's now possible to populate the wrapped :py:class:`MemoryDataSet`
-    instance with some elements:
+    .. testsetup::
 
-    >>> mds.add(MockImportable(0))
-    >>> mds.add(MockImportable(1))
-    >>> mds.add(MockImportable(2))
-    >>> mds.add(MockImportable(3))
-    >>> sorted(mds, key=lambda x: x.args)
-    [<(0,) IMPORTED>, <(1,) IMPORTED>, <(2,) IMPORTED>, <(3,) IMPORTED>]
-
-    The contents of ``dds`` should be the same as the content of the wrapped
-    ``mds``:
+    >>> from importtools.datasets import MemoryDataSet, DiffDataSet
+    >>> dds = DiffDataSet([
+    ...     MockImportable(0),
+    ...     MockImportable(1),
+    ...     MockImportable(2),
+    ...     MockImportable(3)
+    ... ])
 
     >>> sorted(dds, key=lambda x: x.args)
     [<(0,) IMPORTED>, <(1,) IMPORTED>, <(2,) IMPORTED>, <(3,) IMPORTED>]
 
-    Fetching existing elements from ``dds`` should work the same as fetching
-    elements from ``mds``:
+    Fetching existing elements from ``dds`` should work correctly:
 
-    >>> mds.get(MockImportable(1)) == dds.get(MockImportable(1))
+    >>> dds.get(MockImportable(1)) == MockImportable(1)
     True
 
     New :py:class:`~.importtools.importables.Importable` can still added in
@@ -302,19 +288,15 @@ class DiffDataSet(DataSet):
     No elements were affected.
 
     """
-    def __init__(self, data_set):
-        self._wrapped = data_set
-        self._added = MemoryDataSet()
-        self._removed = MemoryDataSet()
-        self._changed = MemoryDataSet()
-        super(DiffDataSet, self).__init__()
-
-    def __iter__(self):
-        for importable in self._wrapped:
-            yield importable.register_listener(self.register_change)
-
-    def __contains__(self, importable):
-        return importable in self._wrapped
+    def __init__(self, data_loader=None):
+        self._added = set()
+        self._removed = set()
+        self._changed = set()
+        # XXX for some reason dict subclass methods can't be hashed
+        self.rc = lambda x: self.register_change(x)
+        super(DiffDataSet, self).__init__(
+            element.register_listener(self.rc) for element in data_loader
+        )
 
     def __str__(self):
         result = ''
@@ -339,30 +321,24 @@ class DiffDataSet(DataSet):
 
         return result
 
-    def get(self, importable, default=None):
-        importable = self._wrapped.get(importable)
-        if importable is None:
-            return default
-        return importable.register_listener(self.register_change)
-
     def add(self, importable):
-        self._wrapped.add(importable)
+        super(DiffDataSet, self).add(
+            importable.register_listener(self.rc)
+        )
 
-        was_removed = self._removed.get(importable)
-        if was_removed is None:
-            self._added.add(importable)
-        else:
-            self._removed.pop(importable)
+        if importable in self._removed:
+            self._removed.discard(importable)
             self._changed.add(importable)
+        else:
+            self._added.add(importable)
 
     def pop(self, importable):
-        was_added = self._added.get(importable)
-        if was_added is None:
-            self._removed.add(importable)
+        if importable in self._added:
+            self._added.discard(importable)
         else:
-            self._added.pop(importable)
+            self._removed.add(importable)
 
-        return self._wrapped.pop(importable)
+        return super(DiffDataSet, self).pop(importable)
 
     def register_change(self, importable):
         """Mark an element in the current dataset as changed.
@@ -371,17 +347,17 @@ class DiffDataSet(DataSet):
         elements of the wrapped :py:class:`DataSet`.
 
         """
-        assert importable in self._wrapped
+        assert importable in self
         self._changed.add(importable)
 
     def get_added(self):
-        """An iterable of all added elements in the wrapped dataset."""
-        return iter(self._added)
+        """A set of all added elements in the wrapped dataset."""
+        return self._added
 
     def get_removed(self):
-        """An iterable of all removed elements in the wrapped dataset."""
-        return iter(self._removed)
+        """A set of all removed elements in the wrapped dataset."""
+        return self._removed
 
     def get_changed(self):
-        """An iterable of all changed elements in the wrapped dataset."""
-        return iter(self._changed)
+        """A set of all changed elements in the wrapped dataset."""
+        return self._changed
