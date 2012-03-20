@@ -65,7 +65,7 @@ class DataSet(RODataSet):
         """``DataSet`` length."""
 
 
-class MemoryDataSet(DataSet):
+class MemoryDataSet(dict, DataSet):
     """
     A simple in-memory :py:class:`dict`-based :py:class:`DataSet`
     implementation.
@@ -122,29 +122,11 @@ class MemoryDataSet(DataSet):
         data_iter = tuple()
         if data_loader is not None:
             data_iter = iter(data_loader)
-        self._dict = dict((i, i) for i in data_iter)
-        super(MemoryDataSet, self).__init__()
-
-    def __iter__(self):
-        return iter(self._dict)
-
-    def __contains__(self, key):
-        return key in self._dict
-
-    def get(self, key, default=None):
-        return self._dict.get(key, default)
-
-    def pop(self, key, default=None):
-        return self._dict.pop(key, default)
+        mapping = ((i, i) for i in data_iter)
+        super(MemoryDataSet, self).__init__(mapping)
 
     def add(self, importable):
-        self._dict[importable] = importable
-
-    def __len__(self):
-        return len(self._dict)
-
-    def __str__(self):
-        return str(self._dict)
+        self[importable] = importable
 
 
 class DiffDataSet(DataSet):
