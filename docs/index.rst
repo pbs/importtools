@@ -32,3 +32,4 @@ API Reference
    sync
 
 * :ref:`genindex`
+* :ref:`modindex`
