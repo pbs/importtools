@@ -1,8 +1,4 @@
-import heapq
-import itertools
-
-
-class FullSync(object):
+def full_sync(source, destination):
     """
     An import strategy that adds the new elements from source in destination
     and deletes from the destination the elements that are not present in the
@@ -65,13 +61,13 @@ class FullSync(object):
 
     .. testsetup::
 
-    >>> from importtools.sync import FullSync
+    >>> from importtools.sync import full_sync
 
     >>> destination.add(MockImportable('i1'))
     >>> destination.add(MockImportable('i2'))
     >>> source.add(MockImportable('i2'))
     >>> source.add(MockImportable('i3'))
-    >>> FullSync().run(source, destination)
+    >>> full_sync(source, destination)
     >>> sorted(destination, key=lambda x: x.args)
     [<('i2',) IMPORTED>, <('i3',) IMPORTED>]
 
@@ -85,7 +81,7 @@ class FullSync(object):
     >>> fmi.make_forced()
     >>> destination.add(fmi)
     >>> source.add(MockImportable('i'))
-    >>> FullSync().run(source, destination)
+    >>> full_sync(source, destination)
     >>> sorted(destination, key=lambda x: x.args)
     [<('i',) IMPORTED>]
 
@@ -98,32 +94,26 @@ class FullSync(object):
     >>> fmi = MockImportable('i')
     >>> fmi.make_forced()
     >>> destination.add(fmi)
-    >>> FullSync().run(source, destination)
+    >>> full_sync(source, destination)
     >>> sorted(destination, key=lambda x: x.args)
     [<('i',) FORCED>]
 
     """
-    def run(self, source, destination):
-        for entry in source:
-            existing = destination.get(entry)
-            if existing is None:
-                destination.add(entry)
-            elif existing.is_forced():
-                existing.make_imported()
+    additive_sync(source, destination)
 
-        to_delete = []
-        for existing in destination:
-            entry = source.get(existing)
-            if entry is None and not existing.is_forced():
-                to_delete.append(existing)
+    to_delete = []
+    for existing in destination:
+        entry = source.get(existing)
+        if entry is None and not existing.is_forced():
+            to_delete.append(existing)
 
-        for entry in to_delete:
-            destination.pop(entry)
+    for entry in to_delete:
+        destination.pop(entry)
 
 
-class AdditiveSync(object):
+def additive_sync(source, destination):
     """
-    A similar strategy with :py:class:`FullSync` but skips the deletion step
+    A similar strategy with :py:class:`full_sync` but skips the deletion step
     (i.e. if an element is in the destination but not in the source it's not
     removed).
 
@@ -181,13 +171,13 @@ class AdditiveSync(object):
 
     .. testsetup::
 
-    >>> from importtools.sync import AdditiveSync
+    >>> from importtools.sync import additive_sync
 
     >>> destination.add(MockImportable('i1'))
     >>> destination.add(MockImportable('i2'))
     >>> source.add(MockImportable('i2'))
     >>> source.add(MockImportable('i3'))
-    >>> AdditiveSync().run(source, destination)
+    >>> additive_sync(source, destination)
     >>> sorted(destination, key=lambda x: x.args)
     [<('i1',) IMPORTED>, <('i2',) IMPORTED>, <('i3',) IMPORTED>]
 
@@ -201,7 +191,7 @@ class AdditiveSync(object):
     >>> fmi.make_forced()
     >>> destination.add(fmi)
     >>> source.add(MockImportable('i'))
-    >>> AdditiveSync().run(source, destination)
+    >>> additive_sync(source, destination)
     >>> sorted(destination, key=lambda x: x.args)
     [<('i',) IMPORTED>]
 
@@ -212,15 +202,14 @@ class AdditiveSync(object):
     >>> destination.add(MockImportable('i1'))
     >>> destination.add(MockImportable('i2'))
     >>> destination.add(MockImportable('i3'))
-    >>> AdditiveSync().run(source, destination)
+    >>> additive_sync(source, destination)
     >>> sorted(destination, key=lambda x: x.args)
     [<('i1',) IMPORTED>, <('i2',) IMPORTED>, <('i3',) IMPORTED>]
 
     """
-    def run(self, source, destination):
-        for entry in source:
-            existing = destination.get(entry)
-            if existing is None:
-                destination.add(entry)
-            elif existing.is_forced():
-                existing.make_imported()
+    for entry in source:
+        existing = destination.get(entry)
+        if existing is None:
+            destination.add(entry)
+        elif existing.is_forced():
+            existing.make_imported()
