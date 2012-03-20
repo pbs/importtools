@@ -179,11 +179,12 @@ def _iter_const(g, const):
     for value in g:
         yield value, const
 
+
 def _get_chunk(iterator, chunk_hint, eq=lambda x, y: x == y):
     """
-    Return a ``list`` of chunk_hint size from the iterator. Once the ``list``
-    size is equal to ``chunk_hint`` it continues to add elements while they are
-    equal to the last one.
+    Return a list from the iterator. Once the list size is equal to
+    ``chunk_hint`` it continues to add elements while they are equal to the
+    last one added. The equality test is done using ``eq``.
 
     """
     result = []
