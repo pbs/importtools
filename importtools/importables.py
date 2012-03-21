@@ -41,8 +41,6 @@ class Importable(object):
     To exemplify the default functionality we first need to create a class that
     override all abstract methods:
 
-    .. testsetup::
-
     >>> from importtools import Importable, MockImportable
     >>> class MockImportable(Importable):
     ...     def __hash__(self):

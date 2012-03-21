@@ -39,6 +39,7 @@ def csv_loader(source, factory, columns, has_header=True):
     .. note:: The columns are ``0`` indexed.
 
     >>> import StringIO
+    >>> from importtools import csv_loader
     >>> source = StringIO.StringIO('''
     ... R1C0,R1C1,R1C2,R1C3
     ... R2C0,R2C1,R2C2,R2C3
@@ -85,6 +86,7 @@ def chunked_loader(ordered_iter1, ordered_iter2, chunk_hint=16384):
     smaller lists while keeping the ordering and their combined length around
     ``chunk_hint`` size.
 
+    >>> from importtools import chunked_loader
     >>> loader = chunked_loader([10, 20, 30, 40], [11, 12, 50, 60], 5)
     >>> source, destination = loader.next()
     >>> sorted(source)

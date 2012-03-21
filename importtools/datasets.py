@@ -71,8 +71,6 @@ class MemoryDataSet(dict, DataSet):
     :py:class:`~.importtools.importables.Importable` :py:mod:`abc` we can
     exemplify this class functionality using :py:class:`tuple` objects:
 
-    .. testsetup::
-
     >>> from importtools import MemoryDataSet
     >>> item1 = (1, )
     >>> item2 = (1, )
@@ -139,8 +137,6 @@ class DiffDataSet(MemoryDataSet):
 
     An :py:class:`~.importtools.importables.Importable` mock is needed to
     populate the datasets:
-
-    .. testsetup::
 
     >>> from importtools import (
     ...     Importable, MockImportable, MemoryDataSet, DiffDataSet

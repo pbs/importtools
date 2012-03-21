@@ -31,8 +31,6 @@ def full_sync(source, destination):
     destination, for the simplicity sake two
     :py:class:`~.importtools.datasets.MemoryDataSet` instances are used:
 
-    .. testsetup::
-
     >>> from importtools import MemoryDataSet
     >>> destination = MemoryDataSet()
     >>> source = MemoryDataSet()
@@ -40,8 +38,6 @@ def full_sync(source, destination):
 
     The destination and the source can now be populated with elements and the
     import should work like expected:
-
-    .. testsetup::
 
     >>> from importtools import Importable, MockImportable, full_sync
 
@@ -123,16 +119,12 @@ def additive_sync(source, destination):
     destination, for the simplicity sake two
     :py:class:`~.importtools.datasets.MemoryDataSet` instances are used:
 
-    .. testsetup::
-
     >>> from importtools import MemoryDataSet
     >>> destination = MemoryDataSet()
     >>> source = MemoryDataSet()
 
     The destination and the source can now be populated with elements and the
     import should work like expected:
-
-    .. testsetup::
 
     >>> from importtools import Importable, MockImportable, additive_sync
 

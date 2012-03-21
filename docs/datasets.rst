@@ -21,8 +21,6 @@ the destination of the import.
    :undoc-members:
    :show-inheritance:
 
-   .. automethod:: __len__
-
 There are two major implementations available: an in-memory simple
 :py:mod:`dict`-based :py:class:`MemoryDataSet` implementation and a
 :py:class:`DiffDataSet` implementation that acts as a :py:class:`DataSet`
