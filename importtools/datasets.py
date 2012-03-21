@@ -259,7 +259,6 @@ class DiffDataSet(MemoryDataSet):
     >>> dds._added = MemoryDataSet()
     >>> dds._removed = MemoryDataSet()
     >>> print dds
-    <BLANKLINE>
     To be changed: 3
     <(0,) IMPORTED>
     <(2,) IMPORTED>
@@ -288,11 +287,15 @@ class DiffDataSet(MemoryDataSet):
             result += '\n'.join(sorted(repr(x) for x in self.get_added()))
         removed_count = len(self._removed)
         if removed_count > 0:
-            result += '\nTo be removed: %s\n' % removed_count
+            if result:
+                result += '\n'
+            result += 'To be removed: %s\n' % removed_count
             result += '\n'.join(sorted(repr(x) for x in self.get_removed()))
         changed_count = len(self._changed)
         if changed_count > 0:
-            result += '\nTo be changed: %s\n' % changed_count
+            if result:
+                result += '\n'
+            result += 'To be changed: %s\n' % changed_count
             result += '\n'.join(sorted(repr(x) for x in self.get_changed()))
         if (added_count + removed_count + changed_count) == 0:
             result += 'No elements were affected.'
