@@ -46,7 +46,7 @@ def full_sync(source, destination):
     >>> source.add(MockImportable('i2'))
     >>> source.add(MockImportable('i3'))
     >>> full_sync(source, destination)
-    >>> sorted(destination, key=lambda x: x.args)
+    >>> sorted(destination)
     [<('i2',) IMPORTED>, <('i3',) IMPORTED>]
 
     In case the destination contains a ``Forced``
@@ -60,7 +60,7 @@ def full_sync(source, destination):
     >>> destination.add(fmi)
     >>> source.add(MockImportable('i'))
     >>> full_sync(source, destination)
-    >>> sorted(destination, key=lambda x: x.args)
+    >>> sorted(destination)
     [<('i',) IMPORTED>]
 
     In case the destination contains a ``Forced``
@@ -73,7 +73,7 @@ def full_sync(source, destination):
     >>> fmi.make_forced()
     >>> destination.add(fmi)
     >>> full_sync(source, destination)
-    >>> sorted(destination, key=lambda x: x.args)
+    >>> sorted(destination)
     [<('i',) FORCED>]
 
     """
@@ -133,7 +133,7 @@ def additive_sync(source, destination):
     >>> source.add(MockImportable('i2'))
     >>> source.add(MockImportable('i3'))
     >>> additive_sync(source, destination)
-    >>> sorted(destination, key=lambda x: x.args)
+    >>> sorted(destination)
     [<('i1',) IMPORTED>, <('i2',) IMPORTED>, <('i3',) IMPORTED>]
 
     In case the destination contains a ``Forced``
@@ -147,7 +147,7 @@ def additive_sync(source, destination):
     >>> destination.add(fmi)
     >>> source.add(MockImportable('i'))
     >>> additive_sync(source, destination)
-    >>> sorted(destination, key=lambda x: x.args)
+    >>> sorted(destination)
     [<('i',) IMPORTED>]
 
     If the source is empty nothing should change:
@@ -158,7 +158,7 @@ def additive_sync(source, destination):
     >>> destination.add(MockImportable('i2'))
     >>> destination.add(MockImportable('i3'))
     >>> additive_sync(source, destination)
-    >>> sorted(destination, key=lambda x: x.args)
+    >>> sorted(destination)
     [<('i1',) IMPORTED>, <('i2',) IMPORTED>, <('i3',) IMPORTED>]
 
     """
