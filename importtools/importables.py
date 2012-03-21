@@ -43,7 +43,7 @@ class Importable(object):
 
     .. testsetup::
 
-    >>> from importtools.importables import Importable
+    >>> from importtools import Importable, MockImportable
     >>> class MockImportable(Importable):
     ...     def __hash__(self):
     ...         return 0
@@ -190,3 +190,20 @@ class Importable(object):
         both is equal.
 
         """
+
+
+class MockImportable(Importable):
+    def __init__(self, *args):
+        super(MockImportable, self).__init__()
+        self.args = tuple(args)
+        self.make_imported()
+
+    def __hash__(self):
+        return hash(self.args)
+
+    def __cmp__(self, other):
+        return cmp(self.args, other.args)
+
+    def __repr__(self):
+        smap = {1: 'IMPORTED', 2: 'FORCED', 3: 'INVALID'}
+        return '<%r %s>' % (self.args, smap.get(self._status, 'N/A'))

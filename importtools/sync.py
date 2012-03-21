@@ -33,35 +33,17 @@ def full_sync(source, destination):
 
     .. testsetup::
 
-    >>> from importtools.datasets import MemoryDataSet
+    >>> from importtools import MemoryDataSet
     >>> destination = MemoryDataSet()
     >>> source = MemoryDataSet()
 
-    An :py:class:`~.importtools.importables.Importable` mock is needed in order
-    to exemplify the syncronization algorithms:
-
-    .. testsetup::
-
-    >>> from importtools.importables import Importable
-    >>> class MockImportable(Importable):
-    ...     def __init__(self, *args):
-    ...         super(MockImportable, self).__init__()
-    ...         self.args = tuple(args)
-    ...         self.make_imported()
-    ...     def __hash__(self):
-    ...         return hash(self.args)
-    ...     def __cmp__(self, other):
-    ...         return cmp(self.args, other.args)
-    ...     def __repr__(self):
-    ...         smap = {1: 'IMPORTED', 2: 'FORCED', 3:'INVALID'}
-    ...         return '<%r %s>' % (self.args, smap.get(self._status, 'N/A'))
 
     The destination and the source can now be populated with elements and the
     import should work like expected:
 
     .. testsetup::
 
-    >>> from importtools.sync import full_sync
+    >>> from importtools import Importable, MockImportable, full_sync
 
     >>> destination.add(MockImportable('i1'))
     >>> destination.add(MockImportable('i2'))
@@ -143,35 +125,16 @@ def additive_sync(source, destination):
 
     .. testsetup::
 
-    >>> from importtools.datasets import MemoryDataSet
+    >>> from importtools import MemoryDataSet
     >>> destination = MemoryDataSet()
     >>> source = MemoryDataSet()
-
-    An :py:class:`~.importtools.importables.Importable` mock is needed in order
-    to exemplify the syncronization algorithms:
-
-    .. testsetup::
-
-    >>> from importtools.importables import Importable
-    >>> class MockImportable(Importable):
-    ...     def __init__(self, *args):
-    ...         super(MockImportable, self).__init__()
-    ...         self.args = tuple(args)
-    ...         self.make_imported()
-    ...     def __hash__(self):
-    ...         return hash(self.args)
-    ...     def __cmp__(self, other):
-    ...         return cmp(self.args, other.args)
-    ...     def __repr__(self):
-    ...         smap = {1: 'IMPORTED', 2: 'FORCED', 3:'INVALID'}
-    ...         return '<%r %s>' % (self.args, smap.get(self._status, 'N/A'))
 
     The destination and the source can now be populated with elements and the
     import should work like expected:
 
     .. testsetup::
 
-    >>> from importtools.sync import additive_sync
+    >>> from importtools import Importable, MockImportable, additive_sync
 
     >>> destination.add(MockImportable('i1'))
     >>> destination.add(MockImportable('i2'))

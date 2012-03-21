@@ -73,7 +73,7 @@ class MemoryDataSet(dict, DataSet):
 
     .. testsetup::
 
-    >>> from importtools.datasets import MemoryDataSet
+    >>> from importtools import MemoryDataSet
     >>> item1 = (1, )
     >>> item2 = (1, )
     >>> item3 = (2, )
@@ -142,23 +142,9 @@ class DiffDataSet(MemoryDataSet):
 
     .. testsetup::
 
-    >>> from importtools.importables import Importable
-    >>> class MockImportable(Importable):
-    ...     def __init__(self, *args):
-    ...         super(MockImportable, self).__init__()
-    ...         self.args = tuple(args)
-    ...         self.make_imported()
-    ...     def __hash__(self):
-    ...         return hash(self.args)
-    ...     def __cmp__(self, other):
-    ...         return cmp(self.args, other.args)
-    ...     def __repr__(self):
-    ...         smap = {1: 'IMPORTED', 2: 'FORCED', 3:'INVALID'}
-    ...         return '<%r %s>' % (self.args, smap.get(self._status, 'N/A'))
-
-    .. testsetup::
-
-    >>> from importtools.datasets import MemoryDataSet, DiffDataSet
+    >>> from importtools import (
+    ...     Importable, MockImportable, MemoryDataSet, DiffDataSet
+    ... )
     >>> dds = DiffDataSet([
     ...     MockImportable(0),
     ...     MockImportable(1),

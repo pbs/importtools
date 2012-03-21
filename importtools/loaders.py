@@ -14,7 +14,7 @@ def args_loader(source, factory, how_many=1):
     This is a short example where each two consecutive values are grouped
     together and used to create tuple instances from a factory function:
 
-    >>> from importtools.loaders import args_loader
+    >>> from importtools import args_loader
     >>> args = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
     >>> factory = lambda x, y: tuple([x, y])
     >>> al = args_loader(args, factory, 2)
