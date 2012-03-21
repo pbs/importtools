@@ -30,6 +30,7 @@ API Reference
    datasets
    loaders
    sync
+   shortcuts
 
 * :ref:`genindex`
 * :ref:`modindex`
