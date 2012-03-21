@@ -148,7 +148,7 @@ class DiffDataSet(MemoryDataSet):
     ...     MockImportable(3)
     ... ])
 
-    >>> sorted(dds, key=lambda x: x.args)
+    >>> sorted(dds)
     [<(0,) IMPORTED>, <(1,) IMPORTED>, <(2,) IMPORTED>, <(3,) IMPORTED>]
 
     Fetching existing elements from ``dds`` should work correctly:
@@ -161,7 +161,7 @@ class DiffDataSet(MemoryDataSet):
 
     >>> dds.add(MockImportable(4))
     >>> dds.add(MockImportable(5))
-    >>> sorted(dds, key=lambda x: x.args)
+    >>> sorted(dds)
     ... # doctest: +NORMALIZE_WHITESPACE
     [<(0,) IMPORTED>, <(1,) IMPORTED>, <(2,) IMPORTED>,
      <(3,) IMPORTED>, <(4,) IMPORTED>, <(5,) IMPORTED>]
@@ -184,16 +184,16 @@ class DiffDataSet(MemoryDataSet):
     <(1,) IMPORTED>
     >>> dds.pop(MockImportable(4))
     <(4,) IMPORTED>
-    >>> sorted(dds, key=lambda x: x.args)
+    >>> sorted(dds)
     [<(0,) IMPORTED>, <(2,) IMPORTED>, <(3,) IMPORTED>, <(5,) IMPORTED>]
 
     And everything should have been registered:
 
-    >>> sorted(dds.get_added(), key=lambda x: x.args)
+    >>> sorted(dds.get_added())
     [<(5,) IMPORTED>]
-    >>> sorted(dds.get_removed(), key=lambda x: x.args)
+    >>> sorted(dds.get_removed())
     [<(1,) IMPORTED>]
-    >>> sorted(dds.get_changed(), key=lambda x: x.args)
+    >>> sorted(dds.get_changed())
     []
 
     Adding and removing the same
@@ -202,11 +202,11 @@ class DiffDataSet(MemoryDataSet):
     >>> dds.add(MockImportable(100))
     >>> dds.pop(MockImportable(100))
     <(100,) IMPORTED>
-    >>> sorted(dds.get_added(), key=lambda x: x.args)
+    >>> sorted(dds.get_added())
     [<(5,) IMPORTED>]
-    >>> sorted(dds.get_removed(), key=lambda x: x.args)
+    >>> sorted(dds.get_removed())
     [<(1,) IMPORTED>]
-    >>> sorted(dds.get_changed(), key=lambda x: x.args)
+    >>> sorted(dds.get_changed())
     []
 
     But removing an original :py:class:`~.importtools.importables.Importable`
@@ -215,32 +215,32 @@ class DiffDataSet(MemoryDataSet):
     >>> dds.pop(MockImportable(2))
     <(2,) IMPORTED>
     >>> dds.add(MockImportable(2))
-    >>> sorted(dds.get_added(), key=lambda x: x.args)
+    >>> sorted(dds.get_added())
     [<(5,) IMPORTED>]
-    >>> sorted(dds.get_removed(), key=lambda x: x.args)
+    >>> sorted(dds.get_removed())
     [<(1,) IMPORTED>]
-    >>> sorted(dds.get_changed(), key=lambda x: x.args)
+    >>> sorted(dds.get_changed())
     [<(2,) IMPORTED>]
 
     If you change one of the existing elements it will be marked as changed:
 
     >>> dds.get(MockImportable(3)).register_change()
-    >>> sorted(dds.get_added(), key=lambda x: x.args)
+    >>> sorted(dds.get_added())
     [<(5,) IMPORTED>]
-    >>> sorted(dds.get_removed(), key=lambda x: x.args)
+    >>> sorted(dds.get_removed())
     [<(1,) IMPORTED>]
-    >>> sorted(dds.get_changed(), key=lambda x: x.args)
+    >>> sorted(dds.get_changed())
     [<(2,) IMPORTED>, <(3,) IMPORTED>]
 
     Even if the elements are accessed by iterating on over the dataset the
     changes are still tracked:
 
     >>> list(dds)[0].register_change()
-    >>> sorted(dds.get_added(), key=lambda x: x.args)
+    >>> sorted(dds.get_added())
     [<(5,) IMPORTED>]
-    >>> sorted(dds.get_removed(), key=lambda x: x.args)
+    >>> sorted(dds.get_removed())
     [<(1,) IMPORTED>]
-    >>> sorted(dds.get_changed(), key=lambda x: x.args)
+    >>> sorted(dds.get_changed())
     [<(0,) IMPORTED>, <(2,) IMPORTED>, <(3,) IMPORTED>]
 
     When printing the object a list of all the added, removed and created
