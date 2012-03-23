@@ -7,7 +7,8 @@ from loaders import *
 def chunked_mem_sync(source_loader, destination_loader, sync, hint=16384):
     """A shortcut to do in memory chunked imports.
 
-    >>> from importtools import MockImportable, chunked_mem_sync, full_sync
+    >>> from importtools.importables import MockImportable
+    >>> from importtools import chunked_mem_sync, full_sync
     >>> source = (MockImportable(x) for x in range(10))
     >>> destination = (MockImportable(x) for x in range(5, 15))
     >>> cms = chunked_mem_sync(source, destination, full_sync, 10)

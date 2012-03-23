@@ -1,6 +1,9 @@
 import abc
 
 
+__all__ = ['Importable']
+
+
 class Importable(object):
     """An :py:mod:`abc` that represents an element that can be imported.
 

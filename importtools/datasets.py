@@ -1,6 +1,9 @@
 import abc
 
 
+__all__ = ['RODataSet', 'DataSet', 'MemoryDataSet', 'DiffDataSet']
+
+
 class RODataSet(object):
     """
     An :py:mod:`abc` that represents a read-only set of
@@ -112,12 +115,12 @@ class MemoryDataSet(dict, DataSet):
     >>> mds = MemoryDataSet((item1, item2, item3))
 
     """
-    def __init__(self, data_loader=None):
+    def __init__(self, data_loader=None, *args, **kwargs):
         data_iter = tuple()
         if data_loader is not None:
             data_iter = iter(data_loader)
         mapping = ((i, i) for i in data_iter)
-        super(MemoryDataSet, self).__init__(mapping)
+        super(MemoryDataSet, self).__init__(mapping, *args, **kwargs)
 
     def add(self, importable):
         self[importable] = importable
@@ -138,9 +141,8 @@ class DiffDataSet(MemoryDataSet):
     An :py:class:`~.importtools.importables.Importable` mock is needed to
     populate the datasets:
 
-    >>> from importtools import (
-    ...     Importable, MockImportable, MemoryDataSet, DiffDataSet
-    ... )
+    >>> from importtools.importables import MockImportable
+    >>> from importtools import Importable, MemoryDataSet, DiffDataSet
     >>> dds = DiffDataSet([
     ...     MockImportable(0),
     ...     MockImportable(1),
@@ -269,14 +271,15 @@ class DiffDataSet(MemoryDataSet):
     No elements were affected.
 
     """
-    def __init__(self, data_loader=None):
+    def __init__(self, data_loader=None, *args, **kwargs):
         self._added = set()
         self._removed = set()
         self._changed = set()
         # XXX for some reason dict subclass methods can't be hashed
         self.rc = lambda x: self.register_change(x)
         super(DiffDataSet, self).__init__(
-            element.register_listener(self.rc) for element in data_loader
+            element.register_listener(self.rc) for element in data_loader,
+            *args, **kwargs
         )
 
     def __str__(self):

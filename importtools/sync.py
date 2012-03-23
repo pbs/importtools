@@ -1,3 +1,6 @@
+__all__ = ['full_sync', 'additive_sync']
+
+
 def full_sync(source, destination):
     """
     An import strategy that adds the new elements from source in destination
@@ -39,7 +42,8 @@ def full_sync(source, destination):
     The destination and the source can now be populated with elements and the
     import should work like expected:
 
-    >>> from importtools import Importable, MockImportable, full_sync
+    >>> from importtools.importables import MockImportable
+    >>> from importtools import Importable, full_sync
 
     >>> destination.add(MockImportable('i1'))
     >>> destination.add(MockImportable('i2'))
@@ -126,7 +130,8 @@ def additive_sync(source, destination):
     The destination and the source can now be populated with elements and the
     import should work like expected:
 
-    >>> from importtools import Importable, MockImportable, additive_sync
+    >>> from importtools.importables import MockImportable
+    >>> from importtools import Importable, additive_sync
 
     >>> destination.add(MockImportable('i1'))
     >>> destination.add(MockImportable('i2'))

@@ -3,6 +3,9 @@ import heapq
 import itertools
 
 
+__all__ = ['args_loader', 'csv_loader', 'chunked_loader']
+
+
 def args_loader(source, factory, how_many=1):
     """
     A loader that yields values from a flattened list by grouping values
