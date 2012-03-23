@@ -118,10 +118,10 @@ class Importable(object):
     __metaclass__ = abc.ABCMeta
     __slots__ = ('_status', 'listeners')
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self._status = 0  # not set
         self.listeners = set()
-        super(Importable, self).__init__()
+        super(Importable, self).__init__(*args, **kwargs)
 
     def register_listener(self, listener):
         """Register a callable  to be notified on changes.
