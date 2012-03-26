@@ -1,4 +1,5 @@
 import abc
+from operator import attrgetter
 
 
 __all__ = ['Importable']
@@ -13,25 +14,6 @@ class Importable(object):
     * :py:meth:`__hash__`
     * :py:meth:`__cmp__`
 
-    At first, a newly created :py:class:`Importable` has no state attached to
-    it and later can be in one of the following states:
-
-    .. _Imported:
-    .. _Forced:
-    .. _Invalid:
-
-    +-------------+--------------------------------------------------------+
-    |State        |Description                                             |
-    +=============+========================================================+
-    |``Imported`` | The entity comes from a typical import.                |
-    +-------------+--------------------------------------------------------+
-    |``Forced``   | The entity was manually added. It has high priority in |
-    |             | the system since it's assumed to be correct.           |
-    +-------------+--------------------------------------------------------+
-    |``Invalid``  | The entity was imported but manually invalidated. It   |
-    |             | has high priority in the system.                       |
-    +-------------+--------------------------------------------------------+
-
     When the mutable part of an :py:class:`Importable` changes all the
     registered listeners, if any, must be notified. See
     :py:meth:`register_listener` and :py:meth:`register_change`.
@@ -41,85 +23,52 @@ class Importable(object):
     :py:class:`Importable` instances are considered equal only if their natural
     keys are the same.
 
+    The :py:meth:`update` method is used to check for metadata changes between
+    two equal :py:class:`Importable` instances.
+
     To exemplify the default functionality we first need to create a class that
     override all abstract methods:
 
-    >>> from importtools import Importable
-    >>> class MockImportable(Importable):
-    ...     def __hash__(self):
-    ...         return 0
-    ...     def __cmp__(self, other):
-    ...         return True
-    ...     def __repr__(self):
-    ...         return '<MockImportable %s>' % id(self)
+    >>> from importtools.importables import MockImportable
 
-    At first, a newly created :py:class:`Importable` has no state:
+    If we register a listener, it will be notified when the metadata changes:
 
-    >>> mi = MockImportable()
-    >>> mi.is_imported(), mi.is_forced(), mi.is_invalid()
-    (False, False, False)
-
-    The entity can be marked as ``Imported``, ``Forced`` and ``Invalid``:
-
-    >>> mi = MockImportable()
-    >>> mi.make_imported()
-    >>> mi.is_imported(), mi.is_forced(), mi.is_invalid()
-    (True, False, False)
-    >>> mi.make_forced()
-    >>> mi.is_imported(), mi.is_forced(), mi.is_invalid()
-    (False, True, False)
-    >>> mi.make_invalid()
-    >>> mi.is_imported(), mi.is_forced(), mi.is_invalid()
-    (False, False, True)
-
-    If we register a listener, it will be notified when the status of the
-    entity changed:
-
+    >>> mi = MockImportable(id=1, a=1, b=2)
     >>> ml = []
     >>> listener = lambda x: ml.append(x)
-    >>> mi = MockImportable().register_listener(listener)
+    >>> mi = mi.register_listener(listener)
+    >>> mi.register_change()
+    >>> ml
+    [<MI a 1, b 2>]
+
+    It's up to the :py:class:`Importable` to define what a change is in its
+    ``update`` method, the default implementation doesn't trigger a change if
+    the values of the attributes returned by :py:meth:`attrs` are the same:
+
+    >>> mi = MockImportable(id=1, a=1, b=2)
+    >>> ml = []
+    >>> listener = lambda x: ml.append(x)
+    >>> mi = mi.register_listener(listener)
+    >>> mi.update(MockImportable(id=1, a=1, b=2))
     >>> ml
     []
-    >>> mi.make_imported()
-    >>> ml # doctest: +ELLIPSIS
-    [<MockImportable ...>]
 
-    The listener should be notified **every time** the status changes:
+    In case the values aren't the same, the :py:class:`Importable` is updated
+    and :py:meth:`register_change` is called:
 
+    >>> mi = MockImportable(id=1, a=1, b=2)
     >>> ml = []
     >>> listener = lambda x: ml.append(x)
-    >>> mi = MockImportable().register_listener(listener)
+    >>> mi = mi.register_listener(listener)
+    >>> mi.update(MockImportable(id=1, a=2, b=3))
     >>> ml
-    []
-    >>> mi.make_imported()
-    >>> mi.make_forced()
-    >>> ml # doctest: +ELLIPSIS
-    [<MockImportable ...>, <MockImportable ...>]
-
-    It's up to the :py:class:`Importable` to define what a change is, the
-    default implementation doesn't trigger a change when changing the status if
-    the value was already the same.
-
-    Registering the same listener multiple times shouldn't result in multiple
-    calls when a change happens:
-
-    >>> mi = MockImportable()
-    >>> ml = []
-    >>> listener = lambda x: ml.append(x)
-    >>> mi.register_listener(listener) # doctest: +ELLIPSIS
-    <MockImportable ...>
-    >>> mi.register_listener(listener) # doctest: +ELLIPSIS
-    <MockImportable ...>
-    >>> mi.make_invalid()
-    >>> ml # doctest: +ELLIPSIS
-    [<MockImportable ...>]
+    [<MI a 2, b 3>]
 
     """
     __metaclass__ = abc.ABCMeta
-    __slots__ = ('_status', 'listeners')
+    __slots__ = ('_status', 'listeners', 'attr_getter')
 
     def __init__(self, *args, **kwargs):
-        self._status = 0  # not set
         self.listeners = set()
         super(Importable, self).__init__(*args, **kwargs)
 
@@ -142,38 +91,36 @@ class Importable(object):
         for listener in self.listeners:
             listener(self)
 
-    def make_imported(self):
-        """Mark as Imported_."""
-        if self._status == 1:
+    def should_be_deleted(self):
+        """This method is checked before marking the importable as deleted."""
+        return True
+
+    def should_be_added(self):
+        """This method is checked before marking the importable as added."""
+        return True
+
+    def attrs(self):
+        """Return the metadata attributes. Defaults to the empty list."""
+        return []
+
+    def update(self, other):
+        """
+        Update the current importable if needed based on the list of attributes
+        returned by :py:meth:`attrs`.
+
+        If any change was done :py:meth:``register_change`` is called.
+
+        """
+        attrs = self.attrs()
+        if not attrs:
             return
-        self._status = 1
-        self.register_change()
-
-    def make_forced(self):
-        """Mark as Forced_."""
-        if self._status == 2:
+        ag = attrgetter(*attrs)
+        other_attrs = ag(other)
+        if ag(self) == other_attrs:
             return
-        self._status = 2
+        for attr_name, value in zip(attrs, other_attrs):
+            setattr(self, attr_name, value)
         self.register_change()
-
-    def make_invalid(self):
-        """Mark as Invalid_."""
-        if self._status == 3:
-            return
-        self._status = 3
-        self.register_change()
-
-    def is_imported(self):
-        """Check if is Imported_."""
-        return self._status == 1
-
-    def is_forced(self):
-        """Check if is Forced_."""
-        return self._status == 2
-
-    def is_invalid(self):
-        """Check if is Invalid_."""
-        return self._status == 3
 
     @abc.abstractmethod
     def __hash__(self):
@@ -194,17 +141,20 @@ class Importable(object):
 
 
 class MockImportable(Importable):
-    def __init__(self, *args):
+    def __init__(self, id, a, b):
+        self.id = int(id)
+        self.a = a
+        self.b = b
         super(MockImportable, self).__init__()
-        self.args = tuple(args)
-        self.make_imported()
+
+    def attrs(self):
+        return ['a', 'b']
 
     def __hash__(self):
-        return hash(self.args)
+        return self.id
 
     def __cmp__(self, other):
-        return cmp(self.args, other.args)
+        return cmp(self.id, other.id)
 
     def __repr__(self):
-        smap = {1: 'IMPORTED', 2: 'FORCED', 3: 'INVALID'}
-        return '<%r %s>' % (self.args, smap.get(self._status, 'N/A'))
+        return '<MI a %s, b %s>' % (self.a, self.b)

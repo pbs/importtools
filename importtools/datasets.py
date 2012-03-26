@@ -144,127 +144,127 @@ class DiffDataSet(MemoryDataSet):
     >>> from importtools.importables import MockImportable
     >>> from importtools import Importable, MemoryDataSet, DiffDataSet
     >>> dds = DiffDataSet([
-    ...     MockImportable(0),
-    ...     MockImportable(1),
-    ...     MockImportable(2),
-    ...     MockImportable(3)
+    ...     MockImportable(id=0, a=0, b=0),
+    ...     MockImportable(id=1, a=1, b=1),
+    ...     MockImportable(id=2, a=2, b=2),
+    ...     MockImportable(id=3, a=3, b=3)
     ... ])
 
     >>> sorted(dds)
-    [<(0,) IMPORTED>, <(1,) IMPORTED>, <(2,) IMPORTED>, <(3,) IMPORTED>]
+    [<MI a 0, b 0>, <MI a 1, b 1>, <MI a 2, b 2>, <MI a 3, b 3>]
 
     Fetching existing elements from ``dds`` should work correctly:
 
-    >>> dds.get(MockImportable(1)) == MockImportable(1)
-    True
+    >>> dds.get(MockImportable(id=1, a=0, b=0))
+    <MI a 1, b 1>
 
     New :py:class:`~.importtools.importables.Importable` can still added in
     ``dds``:
 
-    >>> dds.add(MockImportable(4))
-    >>> dds.add(MockImportable(5))
+    >>> dds.add(MockImportable(id=4, a=4, b=4))
+    >>> dds.add(MockImportable(id=5, a=5, b=5))
     >>> sorted(dds)
     ... # doctest: +NORMALIZE_WHITESPACE
-    [<(0,) IMPORTED>, <(1,) IMPORTED>, <(2,) IMPORTED>,
-     <(3,) IMPORTED>, <(4,) IMPORTED>, <(5,) IMPORTED>]
+    [<MI a 0, b 0>, <MI a 1, b 1>, <MI a 2, b 2>,
+     <MI a 3, b 3>, <MI a 4, b 4>, <MI a 5, b 5>]
 
     Check if the new elements were added:
 
-    >>> dds.get(MockImportable(4))
-    <(4,) IMPORTED>
-    >>> dds.get(MockImportable(5))
-    <(5,) IMPORTED>
+    >>> dds.get(MockImportable(id=4, a=0, b=0))
+    <MI a 4, b 4>
+    >>> dds.get(MockImportable(id=5, a=0, b=0))
+    <MI a 5, b 5>
 
     A lookup with an inexistent element should return the default value:
 
-    >>> dds.get(MockImportable(100), 'default')
+    >>> dds.get(MockImportable(id=100, a=0, b=0), 'default')
     'default'
 
     We should be able to ``pop`` both original and recently added elements:
 
-    >>> dds.pop(MockImportable(1))
-    <(1,) IMPORTED>
-    >>> dds.pop(MockImportable(4))
-    <(4,) IMPORTED>
+    >>> dds.pop(MockImportable(id=1, a=0, b=0))
+    <MI a 1, b 1>
+    >>> dds.pop(MockImportable(id=4, a=0, b=0))
+    <MI a 4, b 4>
     >>> sorted(dds)
-    [<(0,) IMPORTED>, <(2,) IMPORTED>, <(3,) IMPORTED>, <(5,) IMPORTED>]
+    [<MI a 0, b 0>, <MI a 2, b 2>, <MI a 3, b 3>, <MI a 5, b 5>]
 
     And everything should have been registered:
 
     >>> sorted(dds.get_added())
-    [<(5,) IMPORTED>]
+    [<MI a 5, b 5>]
     >>> sorted(dds.get_removed())
-    [<(1,) IMPORTED>]
+    [<MI a 1, b 1>]
     >>> sorted(dds.get_changed())
     []
 
     Adding and removing the same
     :py:class:`~.importtools.importables.Importable` shouldn't change anything:
 
-    >>> dds.add(MockImportable(100))
-    >>> dds.pop(MockImportable(100))
-    <(100,) IMPORTED>
+    >>> dds.add(MockImportable(id=100, a=100, b=100))
+    >>> dds.pop(MockImportable(id=100, a=0, b=0))
+    <MI a 100, b 100>
     >>> sorted(dds.get_added())
-    [<(5,) IMPORTED>]
+    [<MI a 5, b 5>]
     >>> sorted(dds.get_removed())
-    [<(1,) IMPORTED>]
+    [<MI a 1, b 1>]
     >>> sorted(dds.get_changed())
     []
 
     But removing an original :py:class:`~.importtools.importables.Importable`
     and adding a new one should be interpreted as a change:
 
-    >>> dds.pop(MockImportable(2))
-    <(2,) IMPORTED>
-    >>> dds.add(MockImportable(2))
+    >>> dds.pop(MockImportable(id=2, a=0, b=0))
+    <MI a 2, b 2>
+    >>> dds.add(MockImportable(id=2, a=2, b=2))
     >>> sorted(dds.get_added())
-    [<(5,) IMPORTED>]
+    [<MI a 5, b 5>]
     >>> sorted(dds.get_removed())
-    [<(1,) IMPORTED>]
+    [<MI a 1, b 1>]
     >>> sorted(dds.get_changed())
-    [<(2,) IMPORTED>]
+    [<MI a 2, b 2>]
 
     If you change one of the existing elements it will be marked as changed:
 
-    >>> dds.get(MockImportable(3)).register_change()
+    >>> dds.get(MockImportable(id=3, a=0, b=0)).register_change()
     >>> sorted(dds.get_added())
-    [<(5,) IMPORTED>]
+    [<MI a 5, b 5>]
     >>> sorted(dds.get_removed())
-    [<(1,) IMPORTED>]
+    [<MI a 1, b 1>]
     >>> sorted(dds.get_changed())
-    [<(2,) IMPORTED>, <(3,) IMPORTED>]
+    [<MI a 2, b 2>, <MI a 3, b 3>]
 
     Even if the elements are accessed by iterating on over the dataset the
     changes are still tracked:
 
     >>> list(dds)[0].register_change()
     >>> sorted(dds.get_added())
-    [<(5,) IMPORTED>]
+    [<MI a 5, b 5>]
     >>> sorted(dds.get_removed())
-    [<(1,) IMPORTED>]
+    [<MI a 1, b 1>]
     >>> sorted(dds.get_changed())
-    [<(0,) IMPORTED>, <(2,) IMPORTED>, <(3,) IMPORTED>]
+    [<MI a 0, b 0>, <MI a 2, b 2>, <MI a 3, b 3>]
 
     When printing the object a list of all the added, removed and created
     elements will be shown, along with the total number for each operation:
 
     >>> print dds
     To be added: 1
-    <(5,) IMPORTED>
+    <MI a 5, b 5>
     To be removed: 1
-    <(1,) IMPORTED>
+    <MI a 1, b 1>
     To be changed: 3
-    <(0,) IMPORTED>
-    <(2,) IMPORTED>
-    <(3,) IMPORTED>
+    <MI a 0, b 0>
+    <MI a 2, b 2>
+    <MI a 3, b 3>
 
     >>> dds._added = MemoryDataSet()
     >>> dds._removed = MemoryDataSet()
     >>> print dds
     To be changed: 3
-    <(0,) IMPORTED>
-    <(2,) IMPORTED>
-    <(3,) IMPORTED>
+    <MI a 0, b 0>
+    <MI a 2, b 2>
+    <MI a 3, b 3>
 
     >>> dds._changed = MemoryDataSet()
     >>> print dds
@@ -313,11 +313,12 @@ class DiffDataSet(MemoryDataSet):
         super(DiffDataSet, self).add(importable.register_listener(self.rc))
 
     def pop(self, importable):
+        i = super(DiffDataSet, self).pop(importable)
         if importable in self._added:
             self._added.discard(importable)
         else:
-            self._removed.add(importable)
-        return super(DiffDataSet, self).pop(importable)
+            self._removed.add(i)
+        return i
 
     def register_change(self, importable):
         """Mark an element in the current dataset as changed.
