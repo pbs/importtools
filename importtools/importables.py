@@ -66,7 +66,7 @@ class Importable(object):
 
     """
     __metaclass__ = abc.ABCMeta
-    __slots__ = ('_status', 'listeners', 'attr_getter')
+    __slots__ = ('listeners', )
 
     def __init__(self, *args, **kwargs):
         self.listeners = set()
