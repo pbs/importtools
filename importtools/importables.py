@@ -108,7 +108,7 @@ class Importable(object):
         Update the current importable if needed based on the list of attributes
         returned by :py:meth:`attrs`.
 
-        If any change was done :py:meth:``register_change`` is called.
+        If any change was done :py:meth:`register_change` is called.
 
         """
         attrs = self.attrs()
