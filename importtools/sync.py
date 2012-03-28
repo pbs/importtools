@@ -11,7 +11,7 @@ def full_sync(source, destination):
     the destination.
 
     The algorithm calls the
-    :py:method:`~.importtools.importables.Importable.update` method.
+    :py:meth:`~.importtools.importables.Importable.update` method.
 
     In order to see the import in action we need to create a source and a
     destination, for the simplicity sake two
