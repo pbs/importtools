@@ -36,3 +36,6 @@ wrapper that remembers all changes, additions and removals.
    .. automethod:: get_added
    .. automethod:: get_removed
    .. automethod:: get_changed
+
+.. autoclass:: FilterDataSet
+   :show-inheritance:

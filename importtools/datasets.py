@@ -346,7 +346,7 @@ class DiffDataSet(MemoryDataSet):
         return self._changed
 
 
-class FilterDataSet(RODataSet):
+class FilterDataSet(DataSet):
     """
     >>> from importtools import MemoryDataSet
     >>> m = MemoryDataSet(range(10))
@@ -372,3 +372,9 @@ class FilterDataSet(RODataSet):
         if self.is_valid(importable):
             return self.dataset.get(importable, default)
         return default
+
+    def add(self, importable):
+        self.dataset.add(importable)
+
+    def pop(self, importable):
+        self.dataset.pop(importable)
