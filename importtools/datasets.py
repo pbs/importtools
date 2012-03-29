@@ -378,3 +378,6 @@ class FilterDataSet(DataSet):
 
     def pop(self, importable):
         self.dataset.pop(importable)
+
+    def __str__(self):
+        return str(self.dataset)
