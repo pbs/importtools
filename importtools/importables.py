@@ -75,8 +75,8 @@ class Importable(object):
     def register_listener(self, listener):
         """Register a callable  to be notified on changes.
 
-        Registering the same listener multiple times shoudn't result in
-        multiple nottifications to the same listener on a change.
+        Registering the same listener multiple times shouldn't result in
+        multiple notifications to the same listener on a change.
 
         Return an :py:class:`Importable` instance equivalent to this one that
         has the listener registered. Can return the same instance.
@@ -90,14 +90,6 @@ class Importable(object):
         """Notify the listeners that a change has occurred."""
         for listener in self.listeners:
             listener(self)
-
-    def should_be_deleted(self):
-        """This method is checked before marking the importable as deleted."""
-        return True
-
-    def should_be_added(self):
-        """This method is checked before marking the importable as added."""
-        return True
 
     def attrs(self):
         """Return the metadata attributes. Defaults to the empty list."""

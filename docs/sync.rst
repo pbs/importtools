@@ -11,4 +11,6 @@ different startegies can take into account the state in which an
 
 .. autofunction:: full_sync
 
-.. autofunction:: additive_sync
+.. autofunction:: add_sync
+.. autofunction:: pop_sync
+.. autofunction:: update_sync
