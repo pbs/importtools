@@ -1,7 +1,10 @@
 import abc
+import itertools
 
 
-__all__ = ['RODataSet', 'DataSet', 'MemoryDataSet', 'DiffDataSet']
+__all__ = [
+    'RODataSet', 'DataSet', 'MemoryDataSet', 'DiffDataSet', 'FilterDataSet'
+]
 
 
 class RODataSet(object):
@@ -341,3 +344,31 @@ class DiffDataSet(MemoryDataSet):
     def get_changed(self):
         """A set of all changed elements in the wrapped dataset."""
         return self._changed
+
+
+class FilterDataSet(RODataSet):
+    """
+    >>> from importtools import MemoryDataSet
+    >>> m = MemoryDataSet(range(10))
+    >>> f = FilterDataSet(m, lambda x: x % 2)
+    >>> list(f)
+    [1, 3, 5, 7, 9]
+
+    """
+    def __init__(self, dataset, is_valid):
+        self.dataset = dataset
+        self.is_valid = is_valid
+
+    def __iter__(self):
+        return itertools.ifilter(self.is_valid, self.dataset)
+
+    def __contains__(self, importable):
+        return (
+            self.is_valid(importable)
+            and importable in self.dataset
+        )
+
+    def get(self, importable, default=None):
+        if self.is_valid(importable):
+            return self.dataset.get(importable, default)
+        return default
