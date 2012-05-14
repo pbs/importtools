@@ -194,11 +194,11 @@ class DiffDataSet(MemoryDataSet):
 
     And everything should have been registered:
 
-    >>> sorted(dds.get_added())
+    >>> sorted(dds.added)
     [<MI a 5, b 5>]
-    >>> sorted(dds.get_removed())
+    >>> sorted(dds.removed)
     [<MI a 1, b 1>]
-    >>> sorted(dds.get_changed())
+    >>> sorted(dds.changed)
     []
 
     Adding and removing the same
@@ -207,11 +207,11 @@ class DiffDataSet(MemoryDataSet):
     >>> dds.add(MockImportable(id=100, a=100, b=100))
     >>> dds.pop(MockImportable(id=100, a=0, b=0))
     <MI a 100, b 100>
-    >>> sorted(dds.get_added())
+    >>> sorted(dds.added)
     [<MI a 5, b 5>]
-    >>> sorted(dds.get_removed())
+    >>> sorted(dds.removed)
     [<MI a 1, b 1>]
-    >>> sorted(dds.get_changed())
+    >>> sorted(dds.changed)
     []
 
     But removing an original :py:class:`~.importtools.importables.Importable`
@@ -220,58 +220,48 @@ class DiffDataSet(MemoryDataSet):
     >>> dds.pop(MockImportable(id=2, a=0, b=0))
     <MI a 2, b 2>
     >>> dds.add(MockImportable(id=2, a=2, b=2))
-    >>> sorted(dds.get_added())
+    >>> sorted(dds.added)
     [<MI a 5, b 5>]
-    >>> sorted(dds.get_removed())
+    >>> sorted(dds.removed)
     [<MI a 1, b 1>]
-    >>> sorted(dds.get_changed())
+    >>> sorted(dds.changed)
     [<MI a 2, b 2>]
 
     If you change one of the existing elements it will be marked as changed:
 
     >>> dds.get(MockImportable(id=3, a=0, b=0)).register_change()
-    >>> sorted(dds.get_added())
+    >>> sorted(dds.added)
     [<MI a 5, b 5>]
-    >>> sorted(dds.get_removed())
+    >>> sorted(dds.removed)
     [<MI a 1, b 1>]
-    >>> sorted(dds.get_changed())
+    >>> sorted(dds.changed)
     [<MI a 2, b 2>, <MI a 3, b 3>]
 
     Even if the elements are accessed by iterating on over the dataset the
     changes are still tracked:
 
     >>> list(dds)[0].register_change()
-    >>> sorted(dds.get_added())
+    >>> sorted(dds.added)
     [<MI a 5, b 5>]
-    >>> sorted(dds.get_removed())
+    >>> sorted(dds.removed)
     [<MI a 1, b 1>]
-    >>> sorted(dds.get_changed())
+    >>> sorted(dds.changed)
     [<MI a 0, b 0>, <MI a 2, b 2>, <MI a 3, b 3>]
 
     When printing the object a list of all the added, removed and created
     elements will be shown, along with the total number for each operation:
 
     >>> print dds
-    To be added: 1
-    <MI a 5, b 5>
-    To be removed: 1
-    <MI a 1, b 1>
-    To be changed: 3
-    <MI a 0, b 0>
-    <MI a 2, b 2>
-    <MI a 3, b 3>
+    <DiffDataSet: 3 changed, 1 added, 1 removed>
 
     >>> dds._added = MemoryDataSet()
     >>> dds._removed = MemoryDataSet()
     >>> print dds
-    To be changed: 3
-    <MI a 0, b 0>
-    <MI a 2, b 2>
-    <MI a 3, b 3>
+    <DiffDataSet: 3 changed, 0 added, 0 removed>
 
     >>> dds._changed = MemoryDataSet()
     >>> print dds
-    No elements were affected.
+    <DiffDataSet: 0 changed, 0 added, 0 removed>
 
     """
     def __init__(self, data_loader=None, *args, **kwargs):
@@ -286,26 +276,10 @@ class DiffDataSet(MemoryDataSet):
         )
 
     def __str__(self):
-        result = ''
-        added_count = len(self._added)
-        if added_count > 0:
-            result += 'To be added: %s\n' % added_count
-            result += '\n'.join(sorted(repr(x) for x in self.get_added()))
-        removed_count = len(self._removed)
-        if removed_count > 0:
-            if result:
-                result += '\n'
-            result += 'To be removed: %s\n' % removed_count
-            result += '\n'.join(sorted(repr(x) for x in self.get_removed()))
-        changed_count = len(self._changed)
-        if changed_count > 0:
-            if result:
-                result += '\n'
-            result += 'To be changed: %s\n' % changed_count
-            result += '\n'.join(sorted(repr(x) for x in self.get_changed()))
-        if (added_count + removed_count + changed_count) == 0:
-            result += 'No elements were affected.'
-        return result
+        result = '<%s: %d changed, %d added, %d removed>'
+        instance_cls = self.__class__.__name__
+        c = map(len, [self._changed, self._added, self._removed])
+        return result % tuple([instance_cls] + c)
 
     def add(self, importable):
         if importable in self._removed:
@@ -333,17 +307,20 @@ class DiffDataSet(MemoryDataSet):
         assert importable in self
         self._changed.add(importable)
 
-    def get_added(self):
-        """A set of all added elements in the wrapped dataset."""
-        return self._added
+    @property
+    def added(self):
+        """An iterable  of all added elements in the dataset."""
+        return iter(self._added)
 
-    def get_removed(self):
-        """A set of all removed elements in the wrapped dataset."""
-        return self._removed
+    @property
+    def removed(self):
+        """An iterable of all removed elements in the dataset."""
+        return iter(self._removed)
 
-    def get_changed(self):
-        """A set of all changed elements in the wrapped dataset."""
-        return self._changed
+    @property
+    def changed(self):
+        """An iterable of all changed elements in the dataset."""
+        return iter(self._changed)
 
 
 class FilterDataSet(DataSet):

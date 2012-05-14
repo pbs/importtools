@@ -14,20 +14,18 @@ def chunked_mem_sync(source_loader, destination_loader, sync, hint=16384):
     >>> cms = chunked_mem_sync(source, destination, full_sync, 10)
     >>> source, destination = cms.next()
     >>> print destination
-    To be added: 5
-    <MI a 0, b 0>
-    <MI a 1, b 1>
-    <MI a 2, b 2>
-    <MI a 3, b 3>
-    <MI a 4, b 4>
+    <DiffDataSet: 0 changed, 5 added, 0 removed>
+    >>> print sorted(destination.added)
+    [<MI a 0, b 0>, <MI a 1, b 1>, <MI a 2, b 2>, <MI a 3, b 3>, <MI a 4, b 4>]
+
     >>> source, destination = cms.next()
     >>> print destination
-    To be removed: 5
-    <MI a 10, b 10>
-    <MI a 11, b 11>
-    <MI a 12, b 12>
-    <MI a 13, b 13>
-    <MI a 14, b 14>
+    <DiffDataSet: 0 changed, 0 added, 5 removed>
+    >>> print sorted(destination.removed)
+    ... # doctest: +NORMALIZE_WHITESPACE
+    [<MI a 10, b 10>, <MI a 11, b 11>, <MI a 12, b 12>, <MI a 13, b 13>,
+     <MI a 14, b 14>]
+
     >>> source, destination = cms.next()
     Traceback (most recent call last):
         ...
