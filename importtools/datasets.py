@@ -13,6 +13,7 @@ class RODataSet(object):
     :py:class:`~.importtools.importables.Importable` instances.
 
     """
+    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def __iter__(self):
