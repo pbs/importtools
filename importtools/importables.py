@@ -64,6 +64,17 @@ class Importable(object):
     >>> ml
     [<MI a 2, b 3>]
 
+    Special case for single mutable attr:
+
+    >>> mi = MockImportable(id=1, a=1, b=2)
+    >>> mi.attrs = lambda: ['a']
+    >>> ml = []
+    >>> listener = lambda x: ml.append(x)
+    >>> mi = mi.register_listener(listener)
+    >>> mi.update(MockImportable(id=1, a=2, b=3))
+    >>> ml
+    [<MI a 2, b 2>]
+
     """
     __metaclass__ = abc.ABCMeta
     __slots__ = ('listeners', )
@@ -106,7 +117,9 @@ class Importable(object):
         attrs = self.attrs()
         if not attrs:
             return
-        ag = attrgetter(*attrs)
+        get_many = attrgetter(*attrs)
+        get_one = lambda importable: [get_many(importable)]
+        ag = get_many if len(attrs) > 1 else get_one
         other_attrs = ag(other)
         if ag(self) == other_attrs:
             return
