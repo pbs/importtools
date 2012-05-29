@@ -123,7 +123,13 @@ class MemoryDataSet(dict, DataSet):
         data_iter = tuple()
         if data_loader is not None:
             data_iter = iter(data_loader)
-        mapping = ((i, i) for i in data_iter)
+        data_list = list(data_iter)
+        # When you create a dict and provide initial data if there are equal
+        # elements in the initial list, the dict will have the key equal
+        # to the first element and the value of the last duplicated element.
+        err = 'The initial list for dataset can not contain duplicates.'
+        assert len(set(data_list)) == len(data_list), err
+        mapping = ((i, i) for i in data_list)
         super(MemoryDataSet, self).__init__(mapping, *args, **kwargs)
 
     def add(self, importable):
