@@ -324,6 +324,10 @@ class DiffDataSet(MemoryDataSet):
         return iter(self._changed)
 
 
+class _Marker:
+    pass
+
+
 class FilterDataSet(DataSet):
     """
     >>> from importtools import MemoryDataSet
@@ -332,7 +336,24 @@ class FilterDataSet(DataSet):
     >>> list(f)
     [1, 3, 5, 7, 9]
 
+    >>> class Mock(object):
+    ...     def __init__(self, value, valid):
+    ...         self.value = value
+    ...         self.valid = valid
+    ...     def __hash__(self):
+    ...         return hash(self.value)
+    ...     def __cmp__(self, other):
+    ...         return cmp(self.value, other.value)
+
+    >>> m = MemoryDataSet([Mock(1, True), Mock(2, True)])
+    >>> f = FilterDataSet(m, lambda x: x.valid)
+    >>> f.get(Mock(1, False)).value
+    1
+    >>> f.get(Mock(1, False)).valid
+    True
+
     """
+
     def __init__(self, dataset, is_valid):
         self.dataset = dataset
         self.is_valid = is_valid
@@ -347,9 +368,10 @@ class FilterDataSet(DataSet):
         )
 
     def get(self, importable, default=None):
-        if self.is_valid(importable):
-            return self.dataset.get(importable, default)
-        return default
+        result = self.dataset.get(importable, _Marker)
+        if result is _Marker or not self.is_valid(result):
+            return default
+        return result
 
     def add(self, importable):
         self.dataset.add(importable)
