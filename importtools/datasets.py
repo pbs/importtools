@@ -137,8 +137,8 @@ class MemoryDataSet(dict, DataSet):
         # elements in the initial list, the dict will have the key equal
         # to the first element and the value of the last duplicated element.
         err = 'The initial list for dataset can not contain duplicates.'
-        # Try to detect if there were duplicates and fail if so because
-        # we can't know which value sholud be used.
+        # Try to detect if there are duplicates and fail if so because
+        # we don't know which value sholud be used.
         for v, k in self.iteritems():
             assert v is k, err
 
