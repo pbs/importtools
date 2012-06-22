@@ -116,21 +116,31 @@ class MemoryDataSet(dict, DataSet):
 
     Initial data can be passed when constructing instances:
 
+    >>> mds = MemoryDataSet((item2, item3))
+    >>> item2 in mds and item3 in mds
+    True
+
+    Initial data can't contain duplicates:
     >>> mds = MemoryDataSet((item1, item2, item3))
+    Traceback (most recent call last):
+      ...
+    AssertionError: The initial list for dataset can not contain duplicates.
 
     """
     def __init__(self, data_loader=None, *args, **kwargs):
         data_iter = tuple()
         if data_loader is not None:
             data_iter = iter(data_loader)
-        data_list = list(data_iter)
+        mapping = ((i, i) for i in data_iter)
+        super(MemoryDataSet, self).__init__(mapping, *args, **kwargs)
         # When you create a dict and provide initial data if there are equal
         # elements in the initial list, the dict will have the key equal
         # to the first element and the value of the last duplicated element.
         err = 'The initial list for dataset can not contain duplicates.'
-        assert len(set(data_list)) == len(data_list), err
-        mapping = ((i, i) for i in data_list)
-        super(MemoryDataSet, self).__init__(mapping, *args, **kwargs)
+        # Try to detect if there were duplicates and fail if so because
+        # we can't know which value sholud be used.
+        for v, k in self.iteritems():
+            assert v is k, err
 
     def add(self, importable):
         self[importable] = importable
