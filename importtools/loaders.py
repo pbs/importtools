@@ -184,7 +184,7 @@ def chunked_loader(ordered_iter1, ordered_iter2, chunk_hint=16384):
                 e = (next_element, next_from_iter1)
                 iterator = itertools.chain([e], iterator)
                 break
-        if not (i1_elemens or i2_elemens):
+        if not i1_elemens and not i2_elemens:
             break
         yield i1_elemens, i2_elemens
 
