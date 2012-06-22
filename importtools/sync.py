@@ -47,27 +47,41 @@ def full_sync(source, destination):
     [<MI a 100, b 100>]
 
     """
-    update_sync(source, destination)
-    add_sync(source, destination)
-    pop_sync(source, destination)
+    source_set = set(source)
+    destination_set = set(destination)
+    _update_sync(source, destination, source_set & destination_set)
+    _pop_sync(destination, destination_set - source_set)
+    _add_sync(destination, source_set - destination_set)
 
 
 def add_sync(source, destination):
     source_set = set(source)
     destination_set = set(destination)
-    map(destination.add, source_set - destination_set)
+    _add_sync(destination, source_set - destination_set)
+
+
+def _add_sync(destination, s):
+    map(destination.add, s)
 
 
 def pop_sync(source, destination):
     source_set = set(source)
     destination_set = set(destination)
-    map(destination.pop, destination_set - source_set)
+    _pop_sync(destination, destination_set - source_set)
+
+
+def _pop_sync(destination, s):
+    map(destination.pop, s)
 
 
 def update_sync(source, destination):
     source_set = set(source)
     destination_set = set(destination)
-    for element in source_set & destination_set:
+    _update_sync(source, destination, source_set & destination_set)
+
+
+def _update_sync(source, destination, s):
+    for element in s:
         s_element = source.get(element)
         d_element = destination.get(element)
         d_element.update(s_element)
