@@ -47,9 +47,9 @@ def full_sync(source, destination):
     [<MI a 100, b 100>]
 
     """
+    update_sync(source, destination)
     add_sync(source, destination)
     pop_sync(source, destination)
-    update_sync(source, destination)
 
 
 def add_sync(source, destination):
