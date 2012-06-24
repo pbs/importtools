@@ -1,5 +1,6 @@
 *.pyc
 docs/_build/
 *.egg-info/
+*.egg/
 dist/
 .coverage

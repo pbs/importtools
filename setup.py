@@ -10,5 +10,5 @@ setup(
     author_email='banesiu.sever@gmail.com',
     url='https://github.com/pbs/importtools',
     packages=find_packages(),
-    setup_requires=['nose>=1.0'],
+    setup_requires=['nose>=1.0', 'coverage'],
 )
