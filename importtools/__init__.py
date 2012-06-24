@@ -1,7 +1,7 @@
-from importables import *
-from datasets import *
-from sync import *
-from loaders import *
+from importtools.importables import *
+from importtools.datasets import *
+from importtools.sync import *
+from importtools.loaders import *
 
 
 def chunked_mem_sync(source_loader, destination_loader, sync, hint=16384):
