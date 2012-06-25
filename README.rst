@@ -9,3 +9,8 @@ Installation
 ------------
 
   pip install importtools
+
+Build status
+------------
+
+.. image:: https://secure.travis-ci.org/bgreenlee/pygtail.png?branch=master
