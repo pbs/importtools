@@ -75,6 +75,27 @@ class Importable(object):
     >>> ml
     [<MI a 2, b 2>]
 
+    The default :py:meth:`attrs` implementation returns an empty list of
+    mutable fields and because of that :py:meth:`update` doesn't detect
+    any changes:
+
+    >>> class SimpleImportable(Importable):
+    ...     def __init__(self, id, a):
+    ...         self.id = id
+    ...         self.a = a
+    ...         super(SimpleImportable, self).__init__()
+    ...     def __hash__(self): return self.id
+    ...     def __cmp__(self): return cmp(self.id, other.id)
+    ...     def __repr__(self): return '<SI a %s>' % self.a
+
+    >>> mi = SimpleImportable(id=1, a=1)
+    >>> ml = []
+    >>> listener = lambda x: ml.append(x)
+    >>> mi = mi.register_listener(listener)
+    >>> mi.update(SimpleImportable(id=1, a=2))
+    >>> ml
+    []
+
     """
     __metaclass__ = abc.ABCMeta
     __slots__ = ('listeners', )
