@@ -121,10 +121,10 @@ class MemoryDataSet(dict, DataSet):
     True
 
     Initial data can't contain duplicates:
-    >>> mds = MemoryDataSet((item1, item2, item3))
+    >>> init_values = (item1, item2, item3)
+    >>> mds = MemoryDataSet(init_values) # doctest:+IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
-      ...
-    AssertionError: The initial list for dataset can not contain duplicates.
+    AssertionError:
 
     """
     def __init__(self, data_loader=None, *args, **kwargs):
@@ -136,11 +136,11 @@ class MemoryDataSet(dict, DataSet):
         # When you create a dict and provide initial data if there are equal
         # elements in the initial list, the dict will have the key equal
         # to the first element and the value of the last duplicated element.
-        err = 'The initial list for dataset can not contain duplicates.'
+        err = 'The initial list for dataset can not contain duplicates. %s'
         # Try to detect if there are duplicates and fail if so because
         # we don't know which value sholud be used.
         for v, k in self.iteritems():
-            assert v is k, err
+            assert v is k, err % k
 
     def add(self, importable):
         self[importable] = importable
