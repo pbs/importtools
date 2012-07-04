@@ -392,4 +392,4 @@ class FilterDataSet(DataSet):
         self.dataset.add(importable)
 
     def pop(self, importable):
-        self.dataset.pop(importable)
+        return self.dataset.pop(importable)
