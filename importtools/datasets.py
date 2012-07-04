@@ -341,10 +341,6 @@ class DiffDataSet(MemoryDataSet):
         return iter(self._changed)
 
 
-class _Marker:
-    pass
-
-
 class FilterDataSet(DataSet):
     """
     >>> from importtools import MemoryDataSet
@@ -374,6 +370,7 @@ class FilterDataSet(DataSet):
     def __init__(self, dataset, is_valid):
         self.dataset = dataset
         self.is_valid = is_valid
+        self._sentinel = object()
 
     def __iter__(self):
         return itertools.ifilter(self.is_valid, self.dataset)
@@ -385,8 +382,9 @@ class FilterDataSet(DataSet):
         )
 
     def get(self, importable, default=None):
-        result = self.dataset.get(importable, _Marker)
-        if result is _Marker or not self.is_valid(result):
+        sentinel = self._sentinel
+        result = self.dataset.get(importable, sentinel)
+        if result is sentinel or not self.is_valid(result):
             return default
         return result
 
