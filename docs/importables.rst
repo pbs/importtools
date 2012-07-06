@@ -21,9 +21,8 @@ For example an element representing an online video can use the value of the
 streaming URL to be its natural key. The contents of the element can be formed
 from a view counter and the video title. In this scenario changes on the video
 title and counter can be detected and carried across systems thus keeping
-elements which are the same but belong to different systems in sync.
-Changes to the video URL will make the video element lose any corresponding
-elements from other systems.
+elements which are the same in sync. Changes to the video URL will make the
+video element lose any corresponding elements from other systems.
 
 .. autoclass:: Importable
    :members:
