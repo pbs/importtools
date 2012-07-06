@@ -141,7 +141,7 @@ class MemoryDataSet(dict, DataSet):
         # we don't know which value sholud be used.
         for k, v in self.iteritems():
             if k is not v:
-                raise ValueError, err % (k, v)
+                raise ValueError(err % (k, v))
 
     def add(self, importable):
         self[importable] = importable

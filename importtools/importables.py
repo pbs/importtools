@@ -2,7 +2,7 @@ import abc
 from operator import attrgetter
 
 
-__all__ = ['Importable']
+__all__ = ['Importable', 'RecordingImportable']
 
 
 class Importable(object):
@@ -97,90 +97,101 @@ class Importable(object):
     []
 
     """
-    __metaclass__ = abc.ABCMeta
-    __slots__ = ('listeners', )
+    __slots__ = ('listeners', '_natural_key')
+    content_attrs = []
 
-    def __init__(self, *args, **kwargs):
+    _sentinel = object()
+
+    def __init__(self, natural_key, *args, **kwargs):
         self.listeners = set()
+        self._natural_key = natural_key
         super(Importable, self).__init__(*args, **kwargs)
 
-    def register_listener(self, listener):
-        """Register a callable  to be notified on changes.
+    def is_registered(self, listener):
+        """Checks if the listener is already registered."""
+        return listener in self.listeners
 
-        Registering the same listener multiple times shouldn't result in
-        multiple notifications to the same listener on a change.
-
-        Return an :py:class:`Importable` instance equivalent to this one that
-        has the listener registered. Can return the same instance.
-
-        """
-        assert callable(listener)
+    def register(self, listener):
+        """Register a callable to be notified when an update changes data."""
+        if not callable(listener):
+            raise ValueError('Listener is not callable: %s' % listener)
         self.listeners.add(listener)
         return self
 
-    def register_change(self):
-        """Notify the listeners that a change has occurred."""
+    def _notify(self):
+        """Notify all listeners that an update has changed data."""
         for listener in self.listeners:
             listener(self)
 
-    def attrs(self):
-        """Return the metadata attributes. Defaults to the empty list."""
-        return []
+    def update(self, other):
+        """
+        Add docs
+        """
+        sentinel = self._sentinel
+        changed = False
+        attr_iter = iter(self.content_attrs)
+        for attr in attr_iter:
+            this = getattr(self, attr, sentinel)
+            that = getattr(other, attr, sentinel)
+            if this is sentinel or that is sentinel:
+                continue
+            if not this == that:
+                setattr(self, attr, that)
+                changed = True
+                break
+        for attr in attr_iter:
+            other_value = getattr(other, attr, sentinel)
+            if other_value is not sentinel:
+                setattr(self, attr, other_value)
+        if changed:
+            self._notify()
+
+    def __hash__(self):
+        return hash(self._natural_key)
+
+    def __cmp__(self, other):
+        return cmp(
+            self._natural_key,
+            other._natural_key
+        )
+
+
+class RecordingImportable(Importable):
+    __slots__ = ('original_values', )
+
+    def __init__(self, *args, **kwargs):
+        self.original_values = dict()
+        super(RecordingImportable, self).__init__(*args, **kwargs)
 
     def update(self, other):
         """
-        Update the current importable if needed based on the list of attributes
-        returned by :py:meth:`attrs`.
-
-        If any change was done :py:meth:`register_change` is called.
+        Add docs here
 
         """
-        attrs = self.attrs()
-        if not attrs:
-            return
-        get_many = attrgetter(*attrs)
-        get_one = lambda importable: [get_many(importable)]
-        ag = get_many if len(attrs) > 1 else get_one
-        other_attrs = ag(other)
-        if ag(self) == other_attrs:
-            return
-        for attr_name, value in zip(attrs, other_attrs):
-            setattr(self, attr_name, value)
-        self.register_change()
+        sentinel = self._sentinel
+        changed = False
+        attr_iter = iter(self.content_attrs)
+        for attr in attr_iter:
+            this = getattr(self, attr, sentinel)
+            that = getattr(other, attr, sentinel)
+            if this is sentinel or that is sentinel:
+                continue
+            if not this == that:
+                setattr(self, attr, that)
+                if attr not in self.original_values:
+                    self.original_values[attr] = this
+                changed = True
+        if changed:
+            self.notify()
 
-    @abc.abstractmethod
-    def __hash__(self):
-        """An **abstract method** that must compute the element hash value.
+    def forget_changes(self):
+        self.original_values = {}
 
-        Two equal :py:class:`Importable` instances must have equal hash values.
+    def has_changed(self, attr):
+        return attr in self.original_values
 
-        """
-
-    @abc.abstractmethod
-    def __cmp__(self, other):
-        """An **abstract method** that must check if two elements are the same.
-
-        Two :py:class:`Importable` instances are equal if the *natural key* of
-        both is equal.
-
-        """
-
-
-class MockImportable(Importable):
-    def __init__(self, id, a, b):
-        self.id = int(id)
-        self.a = a
-        self.b = b
-        super(MockImportable, self).__init__()
-
-    def attrs(self):
-        return ['a', 'b']
-
-    def __hash__(self):
-        return self.id
-
-    def __cmp__(self, other):
-        return cmp(self.id, other.id)
-
-    def __repr__(self):
-        return '<MI a %s, b %s>' % (self.a, self.b)
+    def original_value(self, attr):
+        try:
+            return self.original_values[attr]
+        except KeyError:
+            return getattr(self, attr)

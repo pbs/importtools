@@ -20,13 +20,14 @@ sync*.
 For example an element representing an online video can use the value of the
 streaming URL to be its natural key. The contents of the element can be formed
 from a view counter and the video title. In this scenario changes on the video
-title and counter can be detected and carried across systems thus keeping
+title and view counter can be detected and carried across systems thus keeping
 elements which are the same in sync. Changes to the video URL will make the
-video element lose any corresponding elements from other systems.
+video element lose any correspondence with elements belonging to other systems.
 
 .. autoclass:: Importable
    :members:
    :undoc-members:
 
-   .. automethod:: __hash__
-   .. automethod:: __cmp__
+.. autoclass:: RecordingImportable
+   :members:
+   :undoc-members:
