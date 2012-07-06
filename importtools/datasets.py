@@ -293,7 +293,7 @@ class DiffDataSet(MemoryDataSet):
             *args, **kwargs
         )
 
-    def __str__(self):
+    def __repr__(self):
         result = '<%s: %d changed, %d added, %d removed>'
         instance_cls = self.__class__.__name__
         c = map(len, [self._changed, self._added, self._removed])
