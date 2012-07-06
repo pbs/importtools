@@ -17,7 +17,7 @@ An ``Importable`` is usually composed of two different parts:
 Two elements that are *the same* and have *equal contents* are said to be *in
 sync*.
 
-For example, an element representing an online video can use the value of the
+For example an element representing an online video can use the value of the
 streaming URL to be its natural key. The contents of the element can be formed
 from a view counter and the video title. In this scenario changes on the video
 title and counter can be detected and carried across systems thus keeping
