@@ -4,14 +4,23 @@ Importable Elements
 .. py:module:: importtools.importables
 
 This library defines an :py:class:`Importable` abstraction that represents
-elements that can be imported. This type of elements have 2 components:
+elements that can be imported.
 
-* An immutable set of values that uniquely identify an element named
-  *natural key*.
-* A mutable set of properties.
+An ``Importable`` is usually composed of two different parts:
 
-A change to the natural key should be represented as a deletion of the
-existing element and an addition of a new one.
+* An immutable *natural key* used to identify *the same* element in different
+  datasets. This is the only required component for an :py:class:`Importable`.
+
+  The natural key can be composed from multiple values but neither of them can
+  change.
+
+  Two elements that have the same natural key are said to be **the same**.
+
+* An `Importable` element can also contain a set of mutable
+  properties that form *the contents*.
+
+  Two elements that are the same and have equal contents are said to be **in
+  sync**.
 
 For example, a *video element* can pick the value of the streaming URL to be its
 natural key since changing the value of the URL represents changing the
