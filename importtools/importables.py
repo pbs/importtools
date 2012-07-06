@@ -145,6 +145,7 @@ class Importable(object):
                 setattr(self, attr, other_value)
         if changed:
             self._notify()
+        return changed
 
     def __hash__(self):
         return hash(self._natural_key)
@@ -183,6 +184,7 @@ class RecordingImportable(Importable):
                 changed = True
         if changed:
             self.notify()
+        return changed
 
     def forget_changes(self):
         self.original_values = {}
