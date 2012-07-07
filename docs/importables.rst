@@ -1,7 +1,7 @@
 Importable Elements
 ===================
 
-.. py:module:: importtools.importables
+.. module:: importtools.importables
 
 This library defines an :py:class:`Importable` ``abc`` that represents elements
 which can be imported.
@@ -25,7 +25,15 @@ elements which are the same in sync. Changes to the video URL will make the
 video element lose any correspondence with elements belonging to other systems.
 
 .. autoclass:: Importable
+
+  .. automethod:: __init__
   .. automethod:: update
+  .. automethod:: register
+  .. automethod:: is_registered
 
 .. autoclass:: RecordingImportable
-   :members:
+  :show-inheritance:
+
+  .. automethod:: changed
+  .. automethod:: new
+  .. automethod:: forget

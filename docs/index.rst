@@ -27,10 +27,10 @@ API Reference
    :maxdepth: 2
 
    importables
-   datasets
-   loaders
-   sync
-   shortcuts
+..   datasets
+..   loaders
+..   sync
+..   shortcuts
 
 * :ref:`genindex`
 * :ref:`modindex`

@@ -21,7 +21,7 @@ class Importable(object):
     content_attrs = []
 
     def __init__(self, natural_key, *args, **kwargs):
-        """Create a new ``Importable`` with the *natural key*.
+        """Create a new ``Importable`` using the *natural key* provided.
 
         The natural key must be hashable and should implement equality and less
         then operators.
@@ -43,17 +43,17 @@ class Importable(object):
         synchronization will take place:
 
         >>> class MockImportable(Importable): pass
-        >>> i1 = MockImportable(1)
-        >>> i2 = MockImportable(2)
+        >>> i1 = MockImportable(0)
+        >>> i2 = MockImportable(0)
         >>> i1.a = 'a1'
         >>> i2.a = 'a2'
 
-        >>> status = i1.update(i2)
+        >>> has_changed = i1.update(i2)
         >>> i1.a
         'a1'
 
         >>> i1.content_attrs = ['a']
-        >>> status = i1.update(i2)
+        >>> has_changed = i1.update(i2)
         >>> i1.a
         'a2'
 
@@ -73,7 +73,7 @@ class Importable(object):
         >>> notifications = []
         >>> i1.register(lambda x: notifications.append(x))
         >>> i1.a = 'a1'
-        >>> status = i1.update(i2)
+        >>> has_changed = i1.update(i2)
         >>> len(notifications)
         1
         >>> notifications[0] is i1
@@ -82,7 +82,7 @@ class Importable(object):
         All attributes that can't be found in the *other* element are skipped:
 
         >>> i1.content_attrs = ['a', 'b']
-        >>> status = i1.update(i2)
+        >>> has_changed = i1.update(i2)
         >>> hasattr(i1, 'b')
         False
 
@@ -111,8 +111,7 @@ class Importable(object):
         return changed
 
     def register(self, listener):
-        """
-        Register a callable to be notified when :py:meth:`update` mutates data.
+        """Register a callable to be notified when ``update`` changes data.
 
         This method should raise an ``ValueError`` if *listener* is not a
         callable:
@@ -156,42 +155,114 @@ class Importable(object):
 
 
 class RecordingImportable(Importable):
-    __slots__ = ('original_values', )
+    """Very similar to :py:class:`Importable` but tracks changes.
+
+    This class records the original values that the attributes had before
+    :py:meth:``update`` synced this element with another one.
+
+    """
+    __slots__ = ('_original_values', '_new_attributes')
 
     def __init__(self, *args, **kwargs):
-        self.original_values = dict()
+        self._original_values = dict()
+        self._new_attributes = set()
         super(RecordingImportable, self).__init__(*args, **kwargs)
 
     def update(self, other):
-        """
-        Add docs here
-
-        """
         changed = False
+        sentinel = object()
         attr_iter = iter(self.content_attrs)
         for attr in attr_iter:
             try:
-                this = getattr(self, attr)
                 that = getattr(other, attr)
             except AttributeError:
                 continue
-            if not this == that:
+            this = getattr(self, attr, sentinel)
+            if this != that:  # sentinel will also be different
                 setattr(self, attr, that)
-                if attr not in self.original_values:
-                    self.original_values[attr] = this
                 changed = True
+                if this is not sentinel:
+                    if attr not in self._original_values:
+                        self._original_values[attr] = this
+                else:
+                    self._new_attributes.add(attr)
         if changed:
             self._notify()
         return changed
 
-    def forget_changes(self):
-        self.original_values = {}
+    def changed(self):
+        """Return a dictionary with all attributes that were changed.
 
-    def has_changed(self, attr):
-        return attr in self.original_values
+        The dit keys are attribute names and the values are equal to what the
+        attributes contained before the sync done by :py:meth:``update``.
 
-    def original_value(self, attr):
-        try:
-            return self.original_values[attr]
-        except KeyError:
-            return getattr(self, attr)
+        >>> class MockImportable(RecordingImportable):
+        ...   content_attrs = ['a']
+        >>> i1 = MockImportable(0)
+        >>> i1.a = 'a1'
+        >>> i2 = MockImportable(0)
+        >>> i2.a = 'a2'
+
+        >>> i1.changed()
+        {}
+        >>> has_changed = i1.update(i2)
+        >>> i1.a
+        'a2'
+        >>> i1.changed()
+        {'a': 'a1'}
+
+        """
+        return dict(self._original_values)
+
+    def new(self):
+        """Return a set of attribute names that were created.
+
+        This attribute were not set on the element before the sync done by
+        :py:meth:``update`` so they don't have an original value and thus are
+        not available in :py:meth:``changed``.
+
+        >>> class MockImportable(RecordingImportable):
+        ...   content_attrs = ['a', 'b']
+        >>> i1 = MockImportable(0)
+        >>> i1.a = 'a1'
+        >>> i2 = MockImportable(0)
+        >>> i2.b = 'b2'
+
+        >>> i1.new()
+        set([])
+        >>> has_changed = i1.update(i2)
+        >>> i1.b
+        'b2'
+        >>> i1.new()
+        set(['b'])
+
+        """
+        return set(self._new_attributes)
+
+    def forget(self):
+        """Forget all memorized changes.
+
+        Calling this method will empty out ``changed`` and ``new``:
+
+        >>> class MockImportable(RecordingImportable):
+        ...   content_attrs = ['a', 'b']
+        >>> i1 = MockImportable(0)
+        >>> i1.a = 'a1'
+        >>> i2 = MockImportable(0)
+        >>> i2.a = 'a2'
+        >>> i2.b = 'b2'
+        >>> has_changed = i1.update(i2)
+
+        >>> i1.changed()
+        {'a': 'a1'}
+        >>> i1.new()
+        set(['b'])
+        >>> i1.forget()
+        >>> i1.changed()
+        {}
+        >>> i1.new()
+        set([])
+
+        """
+        self._original_values = {}
+        self._new_attributes = set()
