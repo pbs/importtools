@@ -6,155 +6,138 @@ __all__ = ['Importable', 'RecordingImportable']
 
 
 class Importable(object):
-    """An :py:mod:`abc` that represents an element that can be imported.
+    """A default implementation representing an importable element.
 
-    This :py:mod:`abc` has two abstract methods that need to be overridden by
-    subclasses:
+    This class is intended to be specialized in order to provide the element
+    content and to override its behaviour if needed.
 
-    * :py:meth:`__hash__`
-    * :py:meth:`__cmp__`
-
-    When the mutable part of an :py:class:`Importable` changes all the
-    registered listeners, if any, must be notified. See
-    :py:meth:`register_listener` and :py:meth:`register_change`.
-
-    Each :py:class:`Importable` must know how to generate a hash based on its
-    own natural keys. They must also define the equality comparison.  Two
-    :py:class:`Importable` instances are considered equal only if their natural
-    keys are the same.
-
-    The :py:meth:`update` method is used to check for metadata changes between
-    two equal :py:class:`Importable` instances.
-
-    To exemplify the default functionality we first need to create a class that
-    override all abstract methods:
-
-    >>> from importtools.importables import MockImportable
-
-    If we register a listener, it will be notified when the metadata changes:
-
-    >>> mi = MockImportable(id=1, a=1, b=2)
-    >>> ml = []
-    >>> listener = lambda x: ml.append(x)
-    >>> mi = mi.register_listener(listener)
-    >>> mi.register_change()
-    >>> ml
-    [<MI a 1, b 2>]
-
-    It's up to the :py:class:`Importable` to define what a change is in its
-    ``update`` method, the default implementation doesn't trigger a change if
-    the values of the attributes returned by :py:meth:`attrs` are the same:
-
-    >>> mi = MockImportable(id=1, a=1, b=2)
-    >>> ml = []
-    >>> listener = lambda x: ml.append(x)
-    >>> mi = mi.register_listener(listener)
-    >>> mi.update(MockImportable(id=1, a=1, b=2))
-    >>> ml
-    []
-
-    In case the values aren't the same, the :py:class:`Importable` is updated
-    and :py:meth:`register_change` is called:
-
-    >>> mi = MockImportable(id=1, a=1, b=2)
-    >>> ml = []
-    >>> listener = lambda x: ml.append(x)
-    >>> mi = mi.register_listener(listener)
-    >>> mi.update(MockImportable(id=1, a=2, b=3))
-    >>> ml
-    [<MI a 2, b 3>]
-
-    Special case for single mutable attr:
-
-    >>> mi = MockImportable(id=1, a=1, b=2)
-    >>> mi.attrs = lambda: ['a']
-    >>> ml = []
-    >>> listener = lambda x: ml.append(x)
-    >>> mi = mi.register_listener(listener)
-    >>> mi.update(MockImportable(id=1, a=2, b=3))
-    >>> ml
-    [<MI a 2, b 2>]
-
-    The default :py:meth:`attrs` implementation returns an empty list of
-    mutable fields and because of that :py:meth:`update` doesn't detect
-    any changes:
-
-    >>> class SimpleImportable(Importable):
-    ...     def __init__(self, id, a):
-    ...         self.id = id
-    ...         self.a = a
-    ...         super(SimpleImportable, self).__init__()
-    ...     def __hash__(self): return self.id
-    ...     def __cmp__(self): return cmp(self.id, other.id)
-    ...     def __repr__(self): return '<SI a %s>' % self.a
-
-    >>> mi = SimpleImportable(id=1, a=1)
-    >>> ml = []
-    >>> listener = lambda x: ml.append(x)
-    >>> mi = mi.register_listener(listener)
-    >>> mi.update(SimpleImportable(id=1, a=2))
-    >>> ml
-    []
+    The :py:meth:`update` implementation in this class doesn't keep track of
+    changed values. For such implementation see
+    :py:class:`RecordingImportable`.
 
     """
+
     __slots__ = ('listeners', '_natural_key')
     content_attrs = []
 
-    _sentinel = object()
-
     def __init__(self, natural_key, *args, **kwargs):
+        """Create a new ``Importable`` with the *natural key*.
+
+        The natural key must be hashable and should implement equality and less
+        then operators.
+
+        """
         self.listeners = set()
         self._natural_key = natural_key
         super(Importable, self).__init__(*args, **kwargs)
 
-    def is_registered(self, listener):
-        """Checks if the listener is already registered."""
-        return listener in self.listeners
-
-    def register(self, listener):
-        """Register a callable to be notified when an update changes data."""
-        if not callable(listener):
-            raise ValueError('Listener is not callable: %s' % listener)
-        self.listeners.add(listener)
-        return self
-
-    def _notify(self):
-        """Notify all listeners that an update has changed data."""
-        for listener in self.listeners:
-            listener(self)
-
     def update(self, other):
+        """Puts this element in sync with the *other*.
+
+        The default implementation uses ``content_attrs`` to search for
+        the attributes that need to be synced between the elements and it
+        copies the values of each attribute it finds from the *other* element
+        in this one.
+
+        By default the ``self.content_attrs`` is an empty list so no
+        synchronization will take place:
+
+        >>> class MockImportable(Importable): pass
+
+        >>> i1 = MockImportable(1)
+        >>> i2 = MockImportable(2)
+
+        >>> i1.a = 'a1'
+        >>> i2.a = 'a2'
+
+        >>> status = i1.update(i2)
+        >>> i1.a
+        'a1'
+
+        >>> i1.content_attrs = ['a']
+        >>> status = i1.update(i2)
+        >>> i1.a
+        'a2'
+
+        If no synchronization was needed (i.e. the content of the elements were
+        equal) this method should return ``False``, otherwise it should return
+        ``True``:
+
+        >>> i1.update(i2)
+        False
+        >>> i1.a = 'a1'
+        >>> i1.update(i2)
+        True
+
+        If the sync mutated this element all listeners should be notified. See
+        :py:meth:`register`:
+
+        >>> notifications = []
+        >>> i1.register(lambda x: notifications.append(x))
+        >>> i1.a = 'a1'
+        >>> status = i1.update(i2)
+        >>> len(notifications)
+        1
+        >>> notifications[0] is i1
+        True
+
+        All attributes that can't be found in the *other* element are skipped:
+
+        >>> i1.content_attrs = ['a', 'b']
+        >>> status = i1.update(i2)
+        >>> hasattr(i1, 'b')
+        False
+
         """
-        Add docs
-        """
-        sentinel = self._sentinel
         changed = False
+        sentinel = object()
         attr_iter = iter(self.content_attrs)
         for attr in attr_iter:
-            this = getattr(self, attr, sentinel)
-            that = getattr(other, attr, sentinel)
-            if this is sentinel or that is sentinel:
+            try:
+                that = getattr(other, attr)
+            except AttributeError:
                 continue
-            if not this == that:
+            this = getattr(self, attr, sentinel)
+            if this is sentinel or this != that:
                 setattr(self, attr, that)
                 changed = True
                 break
         for attr in attr_iter:
-            other_value = getattr(other, attr, sentinel)
-            if other_value is not sentinel:
-                setattr(self, attr, other_value)
+            try:
+                other_value = getattr(other, attr)
+            except AttributeError:
+                continue
+            setattr(self, attr, other_value)
         if changed:
-            self._notify()
+            self.notify()
         return changed
+
+    def register(self, listener):
+        """
+        Register a callable to be notified when :py:meth:`update` mutates data.
+
+        """
+        if not callable(listener):
+            raise ValueError('Listener is not callable: %s' % listener)
+        self.listeners.add(listener)
+
+    def is_registered(self, listener):
+        """Check if the listener is already registered."""
+        return listener in self.listeners
+
+    def notify(self):
+        """Notify all listeners an event has occured passing this element."""
+        for listener in self.listeners:
+            listener(self)
 
     def __hash__(self):
         return hash(self._natural_key)
 
-    def __cmp__(self, other):
-        return cmp(
-            self._natural_key,
-            other._natural_key
-        )
+    def __eq__(self, other):
+        return self._natural_key == other._natural_key
+
+    def __lt__(self, other):
+        return self._natural_key < other._natural_key
 
 
 class RecordingImportable(Importable):
@@ -169,13 +152,13 @@ class RecordingImportable(Importable):
         Add docs here
 
         """
-        sentinel = self._sentinel
         changed = False
         attr_iter = iter(self.content_attrs)
         for attr in attr_iter:
-            this = getattr(self, attr, sentinel)
-            that = getattr(other, attr, sentinel)
-            if this is sentinel or that is sentinel:
+            try:
+                this = getattr(self, attr)
+                that = getattr(other, attr)
+            except AttributeError:
                 continue
             if not this == that:
                 setattr(self, attr, that)
