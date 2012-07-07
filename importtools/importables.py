@@ -12,7 +12,7 @@ class Importable(object):
     content and to override its behaviour if needed.
 
     The :py:meth:`update` implementation in this class doesn't keep track of
-    changed values. For such implementation see
+    changed values. For such an implementation see
     :py:class:`RecordingImportable`.
 
     """
