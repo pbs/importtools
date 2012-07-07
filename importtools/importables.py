@@ -43,10 +43,8 @@ class Importable(object):
         synchronization will take place:
 
         >>> class MockImportable(Importable): pass
-
         >>> i1 = MockImportable(1)
         >>> i2 = MockImportable(2)
-
         >>> i1.a = 'a1'
         >>> i2.a = 'a2'
 
@@ -109,12 +107,20 @@ class Importable(object):
                 continue
             setattr(self, attr, other_value)
         if changed:
-            self.notify()
+            self._notify()
         return changed
 
     def register(self, listener):
         """
         Register a callable to be notified when :py:meth:`update` mutates data.
+
+        This method should raise an ``ValueError`` if *listener* is not a
+        callable:
+
+        >>> i = Importable(0)
+        >>> i.register(1) # doctest:+IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        ValueError:
 
         """
         if not callable(listener):
@@ -122,11 +128,20 @@ class Importable(object):
         self.listeners.add(listener)
 
     def is_registered(self, listener):
-        """Check if the listener is already registered."""
+        """Check if the listener is already registered.
+
+        >>> i = Importable(0)
+        >>> a = lambda x: None
+        >>> i.is_registered(a)
+        False
+        >>> i.register(a)
+        >>> i.is_registered(a)
+        True
+
+        """
         return listener in self.listeners
 
-    def notify(self):
-        """Notify all listeners an event has occured passing this element."""
+    def _notify(self):
         for listener in self.listeners:
             listener(self)
 
@@ -166,7 +181,7 @@ class RecordingImportable(Importable):
                     self.original_values[attr] = this
                 changed = True
         if changed:
-            self.notify()
+            self._notify()
         return changed
 
     def forget_changes(self):

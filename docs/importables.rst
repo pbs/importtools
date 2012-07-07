@@ -25,7 +25,7 @@ elements which are the same in sync. Changes to the video URL will make the
 video element lose any correspondence with elements belonging to other systems.
 
 .. autoclass:: Importable
-   :members:
+  .. automethod:: update
 
 .. autoclass:: RecordingImportable
    :members:
