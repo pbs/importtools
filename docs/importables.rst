@@ -26,8 +26,6 @@ video element lose any correspondence with elements belonging to other systems.
 
 .. autoclass:: Importable
    :members:
-   :undoc-members:
 
 .. autoclass:: RecordingImportable
    :members:
-   :undoc-members:
