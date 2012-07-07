@@ -15,9 +15,21 @@ class Importable(object):
     changed values. For such an implementation see
     :py:class:`RecordingImportable`.
 
+    ``Importable`` instances are hashable and comparable based on the natural
+    key values:
+
+    >>> i1 = Importable(0)
+    >>> i2 = Importable(0)
+    >>> hash(i1) == hash(i2)
+    True
+    >>> i1 == i2
+    True
+    >>> not i1 < i2
+    True
+
     """
 
-    __slots__ = ('listeners', '_natural_key')
+    __slots__ = ('_listeners', '_natural_key')
     content_attrs = []
 
     def __init__(self, natural_key, *args, **kwargs):
@@ -26,10 +38,21 @@ class Importable(object):
         The natural key must be hashable and should implement equality and less
         then operators.
 
+        ``Importable`` elements can access the *natural_key* value used on
+        instantiation using the ``natural_key`` property:
+
+        >>> i = Importable((123, 'abc'))
+        >>> i.natural_key
+        (123, 'abc')
+
         """
-        self.listeners = set()
+        self._listeners = set()
         self._natural_key = natural_key
         super(Importable, self).__init__(*args, **kwargs)
+
+    @property
+    def natural_key(self):
+        return self._natural_key
 
     def update(self, other):
         """Puts this element in sync with the *other*.
@@ -45,17 +68,17 @@ class Importable(object):
         >>> class MockImportable(Importable): pass
         >>> i1 = MockImportable(0)
         >>> i2 = MockImportable(0)
-        >>> i1.a = 'a1'
-        >>> i2.a = 'a2'
+        >>> i1.a, i1.b = 'a1', 'b1'
+        >>> i2.a, i2.b = 'a2', 'b2'
 
         >>> has_changed = i1.update(i2)
         >>> i1.a
         'a1'
 
-        >>> i1.content_attrs = ['a']
+        >>> i1.content_attrs = ['a', 'b', 'x']
         >>> has_changed = i1.update(i2)
-        >>> i1.a
-        'a2'
+        >>> i1.a, i1.b
+        ('a2', 'b2')
 
         If no synchronization was needed (i.e. the content of the elements were
         equal) this method should return ``False``, otherwise it should return
@@ -81,9 +104,9 @@ class Importable(object):
 
         All attributes that can't be found in the *other* element are skipped:
 
-        >>> i1.content_attrs = ['a', 'b']
+        >>> i1.content_attrs = ['a', 'b', 'c']
         >>> has_changed = i1.update(i2)
-        >>> hasattr(i1, 'b')
+        >>> hasattr(i1, 'c')
         False
 
         """
@@ -96,7 +119,7 @@ class Importable(object):
             except AttributeError:
                 continue
             this = getattr(self, attr, sentinel)
-            if this is sentinel or this != that:
+            if this != that:  # sentinel will also be different
                 setattr(self, attr, that)
                 changed = True
                 break
@@ -124,7 +147,7 @@ class Importable(object):
         """
         if not callable(listener):
             raise ValueError('Listener is not callable: %s' % listener)
-        self.listeners.add(listener)
+        self._listeners.add(listener)
 
     def is_registered(self, listener):
         """Check if the listener is already registered.
@@ -138,10 +161,10 @@ class Importable(object):
         True
 
         """
-        return listener in self.listeners
+        return listener in self._listeners
 
     def _notify(self):
-        for listener in self.listeners:
+        for listener in self._listeners:
             listener(self)
 
     def __hash__(self):
@@ -152,6 +175,19 @@ class Importable(object):
 
     def __lt__(self, other):
         return self._natural_key < other._natural_key
+
+    def __repr__(self):
+        """
+        >>> Importable((1, 'a'))
+        Importable((1, 'a'))
+
+        >>> class TestImportable(Importable): pass
+        >>> TestImportable('xyz')
+        TestImportable('xyz')
+
+        """
+        cls_name = self.__class__.__name__
+        return '%s(%r)' % (cls_name, self._natural_key)
 
 
 class RecordingImportable(Importable):
