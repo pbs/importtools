@@ -1,6 +1,4 @@
-"""
-This module defines an :py:class:`Importable` that represents elements that can
-be imported.
+"""This module defines some handy :py:class:`Importable` elements.
 
 An ``Importable`` is usually composed of two different parts:
 
@@ -23,8 +21,6 @@ video element lose any correspondence with elements belonging to other systems.
 """
 
 __all__ = ['Importable', 'RecordingImportable']
-
-__author__ = 'Sever Banesiu'
 
 
 class _AutoContent(type):
