@@ -27,6 +27,45 @@ __all__ = ['Importable', 'RecordingImportable']
 __author__ = 'Sever Banesiu'
 
 
+class AutoContent(type):
+
+    def __new__(cls, name, bases, d):
+
+        try:
+            _ca_ = d.pop('__content_attrs__')
+        except KeyError:
+            return type.__new__(cls, name, bases, d)
+
+        # XXX: py3
+        if isinstance(_ca_, basestring):
+            raise ValueError(
+                '__content_attrs__ must be an iterable of strings.'
+            )
+
+        try:
+            ca = tuple(_ca_)
+        except TypeError:
+            raise ValueError('__content_attrs__ must be iterable.')
+
+        klass = type.__new__(cls, name, bases, d)
+
+        def _init_(self, *args, **kwargs):
+            for content_attr in self.content_attrs:
+                try:
+                    setattr(self, content_attr, kwargs.pop(content_attr))
+                except KeyError:
+                    raise ValueError(
+                        'Attribute %s was expected.' % content_attr
+                    )
+            super(klass, self).__init__(*args, **kwargs)
+
+        klass.__init__ = _init_
+        klass.__slots__ = ca
+        klass.content_attrs = ca
+
+        return klass
+
+
 class Importable(object):
     """A default implementation representing an importable element.
 
@@ -51,6 +90,7 @@ class Importable(object):
 
     """
 
+    __metaclass__ = AutoContent
     __slots__ = ('_listeners', '_natural_key')
     content_attrs = []
 
@@ -201,15 +241,15 @@ class Importable(object):
     def __repr__(self):
         """
         >>> Importable((1, 'a'))
-        Importable((1, 'a'))
+        Importable((1, 'a'), ...)
 
         >>> class TestImportable(Importable): pass
         >>> TestImportable('xyz')
-        TestImportable('xyz')
+        TestImportable('xyz', ...)
 
         """
         cls_name = self.__class__.__name__
-        return '%s(%r)' % (cls_name, self._natural_key)
+        return '%s(%r, ...)' % (cls_name, self._natural_key)
 
 
 class RecordingImportable(Importable):
