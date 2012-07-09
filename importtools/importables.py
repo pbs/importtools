@@ -26,39 +26,36 @@ __all__ = ['Importable', 'RecordingImportable']
 class _AutoContent(type):
 
     def __new__(cls, name, bases, d):
+        _magic_name = '__content_attrs__'
 
-        try:
-            _ca_ = d.pop('__content_attrs__')
-        except KeyError:
+        if _magic_name not in d:
             return type.__new__(cls, name, bases, d)
 
+        ca = d[_magic_name]
         # XXX: py3
-        if isinstance(_ca_, basestring):
+        if isinstance(ca, basestring):
             raise ValueError(
-                '__content_attrs__ must be an iterable of strings.'
+                '%s must be an iterable not a string.' % _magic_name
             )
 
         try:
-            ca = tuple(_ca_)
+            ca = tuple(ca)
         except TypeError:
-            raise ValueError('__content_attrs__ must be iterable.')
-
-        klass = type.__new__(cls, name, bases, d)
+            raise ValueError('%s must be iterable.' % _magic_name)
 
         def _init_(self, *args, **kwargs):
             for content_attr in self.content_attrs:
                 try:
                     setattr(self, content_attr, kwargs.pop(content_attr))
                 except KeyError:
-                    raise ValueError(
-                        'Attribute %s was expected.' % content_attr
-                    )
+                    pass  # All arguments are optional
             super(klass, self).__init__(*args, **kwargs)
 
-        klass.__init__ = _init_
-        klass.__slots__ = ca
-        klass.content_attrs = ca
+        d['__init__'] = _init_
+        d['__slots__'] = ca
+        d['content_attrs'] = ca
 
+        klass = type.__new__(cls, name, bases, d)
         return klass
 
 
@@ -177,7 +174,7 @@ class Importable(object):
             except AttributeError:
                 continue
             this = getattr(self, attr, sentinel)
-            if this != that:  # sentinel will also be different
+            if this != that:  # Sentinel will also be different
                 setattr(self, attr, that)
                 changed = True
                 break
@@ -272,7 +269,7 @@ class RecordingImportable(Importable):
             except AttributeError:
                 continue
             this = getattr(self, attr, sentinel)
-            if this != that:  # sentinel will also be different
+            if this != that:  # Sentinel will also be different
                 setattr(self, attr, that)
                 changed = True
                 if this is not sentinel:
