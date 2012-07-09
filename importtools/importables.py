@@ -27,7 +27,7 @@ __all__ = ['Importable', 'RecordingImportable']
 __author__ = 'Sever Banesiu'
 
 
-class AutoContent(type):
+class _AutoContent(type):
 
     def __new__(cls, name, bases, d):
 
@@ -90,7 +90,7 @@ class Importable(object):
 
     """
 
-    __metaclass__ = AutoContent
+    __metaclass__ = _AutoContent
     __slots__ = ('_listeners', '_natural_key')
     content_attrs = []
 
