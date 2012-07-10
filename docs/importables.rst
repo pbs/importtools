@@ -5,10 +5,10 @@ Importable Elements
 
 .. autoclass:: Importable
 
-  .. automethod:: __init__
   .. automethod:: update
   .. automethod:: register
   .. automethod:: is_registered
+  .. automethod:: notify
 
 .. autoclass:: RecordingImportable
   :show-inheritance:

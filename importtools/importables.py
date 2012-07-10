@@ -69,8 +69,9 @@ class Importable(object):
     changed values. For such an implementation see
     :py:class:`RecordingImportable`.
 
-    ``Importable`` instances are hashable and comparable based on the natural
-    key values:
+    ``Importable`` instances are hashable and comparable based on the
+    *natural_key* value. Because of this the *natural_key* must also be
+    hashable and should implement equality and less then operators:
 
     >>> i1 = Importable(0)
     >>> i2 = Importable(0)
@@ -81,6 +82,13 @@ class Importable(object):
     >>> not i1 < i2
     True
 
+    ``Importable`` elements can access the *natural_key* value used on
+    instantiation trough the ``natural_key`` property:
+
+    >>> i = Importable((123, 'abc'))
+    >>> i.natural_key
+    (123, 'abc')
+
     """
 
     __metaclass__ = _AutoContent
@@ -88,19 +96,6 @@ class Importable(object):
     content_attrs = []
 
     def __init__(self, natural_key, *args, **kwargs):
-        """Create a new ``Importable`` using the *natural key* provided.
-
-        The natural key must be hashable and should implement equality and less
-        then operators.
-
-        ``Importable`` elements can access the *natural_key* value used on
-        instantiation using the ``natural_key`` property:
-
-        >>> i = Importable((123, 'abc'))
-        >>> i.natural_key
-        (123, 'abc')
-
-        """
         self._listeners = set()
         self._natural_key = natural_key
         super(Importable, self).__init__(*args, **kwargs)
@@ -185,7 +180,7 @@ class Importable(object):
                 continue
             setattr(self, attr, other_value)
         if changed:
-            self._notify()
+            self.notify()
         return changed
 
     def register(self, listener):
@@ -218,7 +213,8 @@ class Importable(object):
         """
         return listener in self._listeners
 
-    def _notify(self):
+    def notify(self):
+        """Notify listeners that the element content changed."""
         for listener in self._listeners:
             listener(self)
 
@@ -278,7 +274,7 @@ class RecordingImportable(Importable):
                 else:
                     self._new_attributes.add(attr)
         if changed:
-            self._notify()
+            self.notify()
         return changed
 
     def changed(self):
