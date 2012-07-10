@@ -214,7 +214,18 @@ class Importable(object):
         return listener in self._listeners
 
     def notify(self):
-        """Notify listeners that the element content changed."""
+        """Sends a notification to all listeners passing this element.
+
+        >>> i = Importable(0)
+        >>> notifications = []
+        >>> i.register(lambda x: notifications.append(x))
+        >>> i.notify()
+        >>> len(notifications)
+        1
+        >>> notifications[0] is i
+        True
+
+        """
         for listener in self._listeners:
             listener(self)
 
