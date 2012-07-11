@@ -160,9 +160,9 @@ class Importable(object):
         False
 
         """
-        return self._update(self.content_attrs, other)
+        return self._sync(self.content_attrs, other)
 
-    def _update(self, content_attrs, other):
+    def _sync(self, content_attrs, other):
         changed = False
         sentinel = object()
         attr_iter = iter(content_attrs)
@@ -269,7 +269,7 @@ class RecordingImportable(Importable):
         self._new_attributes = set()
         super(RecordingImportable, self).__init__(*args, **kwargs)
 
-    def _update(self, content_attrs, other):
+    def _sync(self, content_attrs, other):
         changed = False
         sentinel = object()
         attr_iter = iter(content_attrs)
