@@ -65,7 +65,7 @@ class Importable(object):
     This class is intended to be specialized in order to provide the element
     content and to override its behaviour if needed.
 
-    The :py:meth:`update` implementation in this class doesn't keep track of
+    The :py:meth:`sync` implementation in this class doesn't keep track of
     changed values. For such an implementation see
     :py:class:`RecordingImportable`.
 
@@ -104,7 +104,7 @@ class Importable(object):
     def natural_key(self):
         return self._natural_key
 
-    def update(self, other):
+    def sync(self, other):
         """Puts this element in sync with the *other*.
 
         The default implementation uses ``content_attrs`` to search for
@@ -121,12 +121,12 @@ class Importable(object):
         >>> i1.a, i1.b = 'a1', 'b1'
         >>> i2.a, i2.b = 'a2', 'b2'
 
-        >>> has_changed = i1.update(i2)
+        >>> has_changed = i1.sync(i2)
         >>> i1.a
         'a1'
 
         >>> i1.content_attrs = ['a', 'b', 'x']
-        >>> has_changed = i1.update(i2)
+        >>> has_changed = i1.sync(i2)
         >>> i1.a, i1.b
         ('a2', 'b2')
 
@@ -134,10 +134,10 @@ class Importable(object):
         equal) this method should return ``False``, otherwise it should return
         ``True``:
 
-        >>> i1.update(i2)
+        >>> i1.sync(i2)
         False
         >>> i1.a = 'a1'
-        >>> i1.update(i2)
+        >>> i1.sync(i2)
         True
 
         If the sync mutated this element all listeners should be notified. See
@@ -146,7 +146,7 @@ class Importable(object):
         >>> notifications = []
         >>> i1.register(lambda x: notifications.append(x))
         >>> i1.a = 'a1'
-        >>> has_changed = i1.update(i2)
+        >>> has_changed = i1.sync(i2)
         >>> len(notifications)
         1
         >>> notifications[0] is i1
@@ -155,7 +155,7 @@ class Importable(object):
         All attributes that can't be found in the *other* element are skipped:
 
         >>> i1.content_attrs = ['a', 'b', 'c']
-        >>> has_changed = i1.update(i2)
+        >>> has_changed = i1.sync(i2)
         >>> hasattr(i1, 'c')
         False
 
@@ -187,7 +187,7 @@ class Importable(object):
         return changed
 
     def register(self, listener):
-        """Register a callable to be notified when ``update`` changes data.
+        """Register a callable to be notified when ``sync`` changes data.
 
         This method should raise an ``ValueError`` if *listener* is not a
         callable:
@@ -259,7 +259,7 @@ class RecordingImportable(Importable):
     """Very similar to :py:class:`Importable` but tracks changes.
 
     This class records the original values that the attributes had before
-    :py:meth:``update`` synced this element with another one.
+    :py:meth:``sync`` synced this element with another one.
 
     """
     __slots__ = ('_original_values', '_new_attributes')
@@ -295,7 +295,7 @@ class RecordingImportable(Importable):
         """Return a dictionary with all attributes that were changed.
 
         The dit keys are attribute names and the values are equal to what the
-        attributes contained before the sync done by :py:meth:``update``.
+        attributes contained before the sync done by :py:meth:``sync``.
 
         >>> class MockImportable(RecordingImportable):
         ...   content_attrs = ['a']
@@ -306,7 +306,7 @@ class RecordingImportable(Importable):
 
         >>> i1.changed()
         {}
-        >>> has_changed = i1.update(i2)
+        >>> has_changed = i1.sync(i2)
         >>> i1.a
         'a2'
         >>> i1.changed()
@@ -319,7 +319,7 @@ class RecordingImportable(Importable):
         """Return a set of attribute names that were created.
 
         This attribute were not set on the element before the sync done by
-        :py:meth:``update`` so they don't have an original value and thus are
+        :py:meth:``sync`` so they don't have an original value and thus are
         not available in :py:meth:``changed``.
 
         >>> class MockImportable(RecordingImportable):
@@ -331,7 +331,7 @@ class RecordingImportable(Importable):
 
         >>> i1.new()
         set([])
-        >>> has_changed = i1.update(i2)
+        >>> has_changed = i1.sync(i2)
         >>> i1.b
         'b2'
         >>> i1.new()
@@ -352,7 +352,7 @@ class RecordingImportable(Importable):
         >>> i2 = MockImportable(0)
         >>> i2.a = 'a2'
         >>> i2.b = 'b2'
-        >>> has_changed = i1.update(i2)
+        >>> has_changed = i1.sync(i2)
 
         >>> i1.changed()
         {'a': 'a1'}
