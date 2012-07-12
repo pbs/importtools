@@ -44,16 +44,18 @@ class _AutoContent(type):
             raise ValueError('%s must be iterable.' % _magic_name)
 
         def _init_(self, *args, **kwargs):
+            update_kwargs = {}
             for content_attr in self.content_attrs:
                 try:
-                    setattr(self, content_attr, kwargs.pop(content_attr))
+                    update_kwargs[content_attr] = kwargs.pop(content_attr)
                 except KeyError:
                     pass  # All arguments are optional
+            self.update(**update_kwargs)
             super(klass, self).__init__(*args, **kwargs)
 
         d['__init__'] = _init_
         d['__slots__'] = ca
-        d['content_attrs'] = frozenset(ca)
+        d['content_attrs'] = ca
 
         klass = type.__new__(cls, name, bases, d)
         return klass
