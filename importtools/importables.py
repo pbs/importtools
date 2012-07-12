@@ -39,7 +39,7 @@ class _AutoContent(type):
             )
 
         try:
-            ca = tuple(ca)
+            ca = frozenset(ca)
         except TypeError:
             raise ValueError('%s must be iterable.' % _magic_name)
 
@@ -53,7 +53,7 @@ class _AutoContent(type):
 
         d['__init__'] = _init_
         d['__slots__'] = ca
-        d['content_attrs'] = ca
+        d['content_attrs'] = frozenset(ca)
 
         klass = type.__new__(cls, name, bases, d)
         return klass
@@ -89,11 +89,37 @@ class Importable(object):
     >>> i.natural_key
     (123, 'abc')
 
+    Listeners can register to observe an ``Importable`` element for changes.
+    Every time the content attributes change with a value that is not equal to
+    the previous one all registered listeners will be notified:
+
+    >>> class MockImportable(Importable):
+    ...     content_attrs = ['a', 'b']
+    >>> i = MockImportable(0)
+
+    >>> notifications = []
+    >>> i.register(lambda x: notifications.append(x))
+    >>> i.a = []
+    >>> i.b = 'b'
+    >>> i.b = 'bb'
+    >>> len(notifications)
+    3
+    >>> notifications[0] is notifications[1] is notifications[2] is i
+    True
+
+    >>> notifications = []
+    >>> l = []
+    >>> i.a = l
+    >>> len(notifications)
+    0
+    >>> i.a is l
+    True
+
     """
 
     __metaclass__ = _AutoContent
     __slots__ = ('_listeners', '_natural_key')
-    content_attrs = []
+    content_attrs = frozenset([])
 
     def __init__(self, natural_key, *args, **kwargs):
         self._listeners = set()
@@ -103,6 +129,60 @@ class Importable(object):
     @property
     def natural_key(self):
         return self._natural_key
+
+    def __setattr__(self, attr, value):
+        is_different = False
+        if attr in self.content_attrs:
+            is_different = getattr(self, attr, object()) != value
+        super(Importable, self).__setattr__(attr, value)
+        if is_different:
+            self._notify()
+
+    def update(self, **kwargs):
+        """Update multiple content attrtibutes and fire a single notification.
+
+        Multiple changes to the element content can be grouped in a single call
+        to :py:meth:`update`. This method should return ``True`` if at least
+        one element differed from the original values or else ``False``.
+
+        >>> class MockImportable(Importable):
+        ...     content_attrs = ['a', 'b']
+        >>> i = MockImportable(0)
+        >>> i.register(lambda x: notifications.append(x))
+
+        >>> notifications = []
+        >>> i.update(a=100, b=200)
+        True
+        >>> len(notifications)
+        1
+        >>> notifications[0] is i
+        True
+        >>> notifications = []
+        >>> i.update(a=100, b=200)
+        False
+        >>> len(notifications)
+        0
+
+        """
+        has_changed = False
+        sentinel = object()
+        super_ = super(Importable, self)
+        content_attrs = self.content_attrs
+        for attr_name, value in kwargs.items():
+            if attr_name not in content_attrs:
+                raise ValueError(
+                    'Attribute %s is not part of the element content.'
+                    % attr_name
+                )
+            if not has_changed:
+                current_value = getattr(self, attr_name, sentinel)
+                # Sentinel will also be different
+                if current_value != value:
+                    has_changed = True
+            super_.__setattr__(attr_name, value)
+        if has_changed:
+            self._notify()
+        return has_changed
 
     def sync(self, other):
         """Puts this element in sync with the *other*.
@@ -143,9 +223,9 @@ class Importable(object):
         If the sync mutated this element all listeners should be notified. See
         :py:meth:`register`:
 
+        >>> i1.a = 'a1'
         >>> notifications = []
         >>> i1.register(lambda x: notifications.append(x))
-        >>> i1.a = 'a1'
         >>> has_changed = i1.sync(i2)
         >>> len(notifications)
         1
@@ -163,28 +243,15 @@ class Importable(object):
         return self._sync(self.content_attrs, other)
 
     def _sync(self, content_attrs, other):
-        changed = False
-        sentinel = object()
-        attr_iter = iter(content_attrs)
-        for attr in attr_iter:
+        kwargs = {}
+        for attr in content_attrs:
             try:
                 that = getattr(other, attr)
             except AttributeError:
                 continue
-            this = getattr(self, attr, sentinel)
-            if this != that:  # Sentinel will also be different
-                setattr(self, attr, that)
-                changed = True
-                break
-        for attr in attr_iter:
-            try:
-                other_value = getattr(other, attr)
-            except AttributeError:
-                continue
-            setattr(self, attr, other_value)
-        if changed:
-            self.notify()
-        return changed
+            else:
+                kwargs[attr] = that
+        return self.update(**kwargs)
 
     def register(self, listener):
         """Register a callable to be notified when ``sync`` changes data.
@@ -216,19 +283,8 @@ class Importable(object):
         """
         return listener in self._listeners
 
-    def notify(self):
-        """Sends a notification to all listeners passing this element.
-
-        >>> i = Importable(0)
-        >>> notifications = []
-        >>> i.register(lambda x: notifications.append(x))
-        >>> i.notify()
-        >>> len(notifications)
-        1
-        >>> notifications[0] is i
-        True
-
-        """
+    def _notify(self):
+        """Sends a notification to all listeners passing this element."""
         for listener in self._listeners:
             listener(self)
 
@@ -236,10 +292,10 @@ class Importable(object):
         return hash(self._natural_key)
 
     def __eq__(self, other):
-        return self._natural_key == other._natural_key
+        return self._natural_key == other.natural_key
 
     def __lt__(self, other):
-        return self._natural_key < other._natural_key
+        return self._natural_key < other.natural_key
 
     def __repr__(self):
         """
@@ -288,7 +344,7 @@ class RecordingImportable(Importable):
                 else:
                     self._new_attributes.add(attr)
         if changed:
-            self.notify()
+            self._notify()
         return changed
 
     def changed(self):

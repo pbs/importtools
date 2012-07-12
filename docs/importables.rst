@@ -6,9 +6,10 @@ Importable Elements
 .. autoclass:: Importable
 
   .. automethod:: update
+  .. automethod:: sync
   .. automethod:: register
   .. automethod:: is_registered
-  .. automethod:: notify
+  .. automethod:: _notify
 
 .. autoclass:: RecordingImportable
   :show-inheritance:
