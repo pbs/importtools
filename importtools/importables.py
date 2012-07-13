@@ -50,8 +50,8 @@ class _AutoContent(type):
                     update_kwargs[content_attr] = kwargs.pop(content_attr)
                 except KeyError:
                     pass  # All arguments are optional
-            self.update(**update_kwargs)
             super(klass, self).__init__(*args, **kwargs)
+            self.update(**update_kwargs)
 
         d['__init__'] = _init_
         d['__slots__'] = frozenset(d.get('__slots__', [])) | ca
