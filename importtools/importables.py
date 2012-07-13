@@ -333,9 +333,11 @@ class RecordingImportable(Importable):
     """Very similar to :py:class:`Importable` but tracks changes.
 
     This class records the original values that the attributes had before
-    :py:meth:``sync`` synced this element with another one.
+    any change introduced by attribute assignment or call to ``update`` and
+    ``sync``.
 
     """
+
     __slots__ = ('_original', )
 
     def __init__(self, *args, **kwargs):

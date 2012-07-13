@@ -14,6 +14,5 @@ Importable Elements
 .. autoclass:: RecordingImportable
   :show-inheritance:
 
-  .. automethod:: changed
-  .. automethod:: new
-  .. automethod:: forget
+  .. autoproperty:: orig
+  .. automethod:: reset
