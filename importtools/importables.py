@@ -45,7 +45,7 @@ class _AutoContent(type):
 
         def _init_(self, *args, **kwargs):
             update_kwargs = {}
-            for content_attr in self.content_attrs:
+            for content_attr in self._content_attrs:
                 try:
                     update_kwargs[content_attr] = kwargs.pop(content_attr)
                 except KeyError:
@@ -54,8 +54,8 @@ class _AutoContent(type):
             super(klass, self).__init__(*args, **kwargs)
 
         d['__init__'] = _init_
-        d['__slots__'] = ca
-        d['content_attrs'] = ca
+        d['__slots__'] = frozenset(d.get('__slots__', [])) | ca
+        d['_content_attrs'] = ca
 
         klass = type.__new__(cls, name, bases, d)
         return klass
@@ -96,7 +96,7 @@ class Importable(object):
     the previous one all registered listeners will be notified:
 
     >>> class MockImportable(Importable):
-    ...     content_attrs = ['a', 'b']
+    ...     _content_attrs = ['a', 'b']
     >>> i = MockImportable(0)
 
     >>> notifications = []
@@ -121,7 +121,7 @@ class Importable(object):
 
     __metaclass__ = _AutoContent
     __slots__ = ('_listeners', '_natural_key')
-    content_attrs = frozenset([])
+    _content_attrs = frozenset([])
 
     def __init__(self, natural_key, *args, **kwargs):
         self._listeners = set()
@@ -134,7 +134,7 @@ class Importable(object):
 
     def __setattr__(self, attr, value):
         is_different = False
-        if attr in self.content_attrs:
+        if attr in self._content_attrs:
             is_different = getattr(self, attr, object()) != value
         super(Importable, self).__setattr__(attr, value)
         if is_different:
@@ -148,7 +148,7 @@ class Importable(object):
         one element differed from the original values or else ``False``.
 
         >>> class MockImportable(Importable):
-        ...     content_attrs = ['a', 'b']
+        ...     _content_attrs = ['a', 'b']
         >>> i = MockImportable(0)
         >>> i.register(lambda x: notifications.append(x))
 
@@ -169,7 +169,7 @@ class Importable(object):
         has_changed = False
         sentinel = object()
         super_ = super(Importable, self)
-        content_attrs = self.content_attrs
+        content_attrs = self._content_attrs
         for attr_name, value in kwargs.items():
             if attr_name not in content_attrs:
                 raise ValueError(
@@ -189,17 +189,19 @@ class Importable(object):
     def sync(self, other):
         """Puts this element in sync with the *other*.
 
-        The default implementation uses ``content_attrs`` to search for
+        The default implementation uses ``_content_attrs`` to search for
         the attributes that need to be synced between the elements and it
         copies the values of each attribute it finds from the *other* element
         in this one.
 
-        By default the ``self.content_attrs`` is an empty list so no
+        By default the ``self._content_attrs`` is an empty list so no
         synchronization will take place:
 
-        >>> class MockImportable(Importable): pass
+        >>> class MockImportable(Importable):
+        ...     pass
         >>> i1 = MockImportable(0)
         >>> i2 = MockImportable(0)
+
         >>> i1.a, i1.b = 'a1', 'b1'
         >>> i2.a, i2.b = 'a2', 'b2'
 
@@ -207,7 +209,13 @@ class Importable(object):
         >>> i1.a
         'a1'
 
-        >>> i1.content_attrs = ['a', 'b', 'x']
+        >>> class MockImportable(Importable):
+        ...     _content_attrs = ['a', 'b', 'x']
+        >>> i1 = MockImportable(0)
+        >>> i2 = MockImportable(0)
+        >>> i1.a, i1.b = 'a1', 'b1'
+        >>> i2.a, i2.b = 'a2', 'b2'
+
         >>> has_changed = i1.sync(i2)
         >>> i1.a, i1.b
         ('a2', 'b2')
@@ -236,13 +244,13 @@ class Importable(object):
 
         All attributes that can't be found in the *other* element are skipped:
 
-        >>> i1.content_attrs = ['a', 'b', 'c']
+        >>> i1._content_attrs = ['a', 'b', 'c']
         >>> has_changed = i1.sync(i2)
         >>> hasattr(i1, 'c')
         False
 
         """
-        return self._sync(self.content_attrs, other)
+        return self._sync(self._content_attrs, other)
 
     def _sync(self, content_attrs, other):
         kwargs = {}
@@ -313,6 +321,14 @@ class Importable(object):
         return '%s(%r, ...)' % (cls_name, self._natural_key)
 
 
+class _Original(Importable):
+    # This class has __dict__ enabled so _content_attrs can be overriden for
+    # each instance.
+    def __init__(self, content_attrs, *args, **kwargs):
+        self._content_attrs = content_attrs
+        super(_Original, self).__init__(*args, **kwargs)
+
+
 class RecordingImportable(Importable):
     """Very similar to :py:class:`Importable` but tracks changes.
 
@@ -320,108 +336,61 @@ class RecordingImportable(Importable):
     :py:meth:``sync`` synced this element with another one.
 
     """
-    __slots__ = ('_original_values', '_new_attributes')
+    __slots__ = ('_original', )
 
     def __init__(self, *args, **kwargs):
-        self._original_values = dict()
-        self._new_attributes = set()
         super(RecordingImportable, self).__init__(*args, **kwargs)
+        self.reset()
 
-    def _sync(self, content_attrs, other):
-        changed = False
-        sentinel = object()
-        attr_iter = iter(content_attrs)
-        for attr in attr_iter:
-            try:
-                that = getattr(other, attr)
-            except AttributeError:
-                continue
-            this = getattr(self, attr, sentinel)
-            if this != that:  # Sentinel will also be different
-                setattr(self, attr, that)
-                changed = True
-                if this is not sentinel:
-                    if attr not in self._original_values:
-                        self._original_values[attr] = this
-                else:
-                    self._new_attributes.add(attr)
-        if changed:
-            self._notify()
-        return changed
+    @property
+    def orig(self):
+        """An object that can be used to access the elements original values.
 
-    def changed(self):
-        """Return a dictionary with all attributes that were changed.
+        The object has all the attributes that this element had when it was
+        instantiated or last time when :py:meth:`reset` was called.
 
-        The dit keys are attribute names and the values are equal to what the
-        attributes contained before the sync done by :py:meth:``sync``.
 
         >>> class MockImportable(RecordingImportable):
-        ...   content_attrs = ['a']
-        >>> i1 = MockImportable(0)
-        >>> i1.a = 'a1'
-        >>> i2 = MockImportable(0)
-        >>> i2.a = 'a2'
+        ...   _content_attrs = ['a']
+        >>> i = MockImportable(0)
 
-        >>> i1.changed()
-        {}
-        >>> has_changed = i1.sync(i2)
-        >>> i1.a
-        'a2'
-        >>> i1.changed()
-        {'a': 'a1'}
-
-        """
-        return dict(self._original_values)
-
-    def new(self):
-        """Return a set of attribute names that were created.
-
-        This attribute were not set on the element before the sync done by
-        :py:meth:``sync`` so they don't have an original value and thus are
-        not available in :py:meth:``changed``.
-
-        >>> class MockImportable(RecordingImportable):
-        ...   content_attrs = ['a', 'b']
-        >>> i1 = MockImportable(0)
-        >>> i1.a = 'a1'
-        >>> i2 = MockImportable(0)
-        >>> i2.b = 'b2'
-
-        >>> i1.new()
-        set([])
-        >>> has_changed = i1.sync(i2)
-        >>> i1.b
-        'b2'
-        >>> i1.new()
-        set(['b'])
+        >>> hasattr(i.orig, 'a')
+        False
+        >>> i.a = 'a'
+        >>> i.reset()
+        >>> i.a
+        'a'
+        >>> i.orig.a
+        'a'
+        >>> i.a = 'aa'
+        >>> i.a
+        'aa'
+        >>> i.orig.a
+        'a'
 
         """
-        return set(self._new_attributes)
+        return self._original
 
-    def forget(self):
+    def reset(self):
         """Forget all memorized changes.
 
-        Calling this method will empty out ``changed`` and ``new``:
-
         >>> class MockImportable(RecordingImportable):
-        ...   content_attrs = ['a', 'b']
-        >>> i1 = MockImportable(0)
-        >>> i1.a = 'a1'
-        >>> i2 = MockImportable(0)
-        >>> i2.a = 'a2'
-        >>> i2.b = 'b2'
-        >>> has_changed = i1.sync(i2)
+        ...   _content_attrs = ['a']
+        >>> i = MockImportable(0)
 
-        >>> i1.changed()
-        {'a': 'a1'}
-        >>> i1.new()
-        set(['b'])
-        >>> i1.forget()
-        >>> i1.changed()
-        {}
-        >>> i1.new()
-        set([])
+        >>> hasattr(i.orig, 'a')
+        False
+        >>> i.a = 'a'
+        >>> i.reset()
+        >>> i.a = 'aa'
+        >>> i.orig.a
+        'a'
+        >>> i.reset()
+        >>> i.orig.a
+        'aa'
 
         """
-        self._original_values = {}
-        self._new_attributes = set()
+        # Create new instance since _content_attrs can shrunk in time and we
+        # need not keep values that are not in that list anymore.
+        self._original = _Original(self._content_attrs, self.natural_key)
+        self._original.sync(self)
