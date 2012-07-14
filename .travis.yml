@@ -6,7 +6,7 @@ python:
     - pypy
 #    - 3.2
 
-script: python setup.py nosetests importtools.importables
+script: python setup.py nosetests --tests=importtools.importables,importtools.datasets
 
 notifications:
   email:
