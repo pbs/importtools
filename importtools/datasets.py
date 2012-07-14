@@ -1,3 +1,13 @@
+"""This module contains ``DataSet`` implementations used to hold Importables.
+
+The :py:class:`DataSet` concrete classes should be used when running import
+algorithms as the destination. Before starting the import it should contain the
+initial data found in the destination system and after running the import it
+will contain the newly synchronized data. From this point of view this
+structure serves as both input and output argument for the algorithm.
+
+"""
+
 import abc
 import itertools
 
@@ -6,9 +16,16 @@ __all__ = ['DataSet', 'SimpleDataSet']
 
 
 class DataSet(object):
-    """
-    An :py:mod:`abc` that represents a mutable set that can hold
-    :py:class:`~.importtools.importables.Importable` instances.
+    """An ``abc`` that represents a mutable set of elements.
+
+    This class serves as documentation of the methods a ``DataSet`` should
+    implement. For concrete implementations available in this module see
+    :py:class:`SimpleDataSet` and :py:class:`RecordingDataSet`.
+
+    A `DataSet` is very similar with a normal `set` the difference being that
+    you can :py:meth:`get` an element. This is useful is because if the
+    elements are ``Importable`` instances even if they are equal (the natural
+    keys are the same) the contents may be different.
 
     """
 
@@ -16,46 +33,28 @@ class DataSet(object):
 
     @abc.abstractmethod
     def __iter__(self):
-        """
-        Iterate over all the :py:class:`~.importtools.importables.Importable`
-        instances in this set.
-
-        """
+        """Iterate over all the content of this set."""
 
     @abc.abstractmethod
-    def get(self, importable, default=None):
-        """
-        Return an equal :py:class:`~.importtools.importables.Importable` from
-        the dataset or the default value if no such instances are found.
-
-        """
+    def get(self, element, default=None):
+        """Return an equal element from the dataset or the default value."""
 
     @abc.abstractmethod
-    def add(self, importable):
-        """
-        Add the :py:class:`~.importtools.importables.Importable` in the dataset
-        or replaces an existing and equal one.
-
-        """
+    def add(self, element):
+        """Add or replace the element in the dataset."""
 
     @abc.abstractmethod
-    def pop(self, importable):
-        """
-        Remove and return an equal
-        :py:class:`~.importtools.importables.Importable` from the dataset.
-
-        """
+    def pop(self, element):
+        """Remove and return an equal element from the dataset."""
 
 
 class SimpleDataSet(dict, DataSet):
     """A simple :py:class:`dict`-based :py:class:`DataSet` implementation.
 
+    At first, a newly created instance has no elements:
+
     >>> from importtools import Importable
     >>> i1, i2, i3 = Importable(0), Importable(0), Importable(1)
-
-    At first, a newly created :py:class:`MemoryDataSet` instance has no
-    elements:
-
     >>> sds = SimpleDataSet()
     >>> list(sds)
     []
@@ -75,13 +74,13 @@ class SimpleDataSet(dict, DataSet):
     'default'
 
     An iterable containing the initial data can be passed when constructing
-    ``SimpleDataSet`` intances:
+    intances:
 
     >>> sds = SimpleDataSet((i1, i3))
     >>> sorted(list(sds))
     [Importable(0, ...), Importable(1, ...)]
 
-    Initial data can not contain duplicates:
+    A `ValueError` should be raised if the initial data contains duplicates:
 
     >>> init_values = (i1, i2, i3)
     >>> SimpleDataSet(init_values) # doctest:+IGNORE_EXCEPTION_DETAIL
@@ -90,17 +89,18 @@ class SimpleDataSet(dict, DataSet):
 
     """
     def __init__(self, data_loader=None, *args, **kwargs):
-        data_iter = tuple()
-        if data_loader is not None:
-            data_iter = iter(data_loader)
-        mapping = ((i, i) for i in data_iter)
+        if data_loader is None:
+            data_loader = ()
+        mapping = ((i, i) for i in data_loader)
         super(SimpleDataSet, self).__init__(mapping, *args, **kwargs)
-        # When you create a dict and provide initial data if there are equal
-        # elements in the initial list, the dict will have the key equal
-        # to the first element and the value of the last duplicated element.
+        # When a new dict is created and initial data is passed in the
+        # constructor if there are elements in the initial data the dict will
+        # have the key pointing to the first element and the value pointing to
+        # the last duplicated element. We can use this trick to ensure that
+        # there are not duplicates.
+        # The reason we can't handle duplicate elements is because we don't
+        # know which one of them to use.
         err = 'The initial list for dataset can not contain duplicates: %s %s'
-        # Try to detect if there are duplicates and fail if so because
-        # we don't know which value sholud be used.
         for k, v in self.iteritems():
             if k is not v:
                 raise ValueError(err % (k, v))
