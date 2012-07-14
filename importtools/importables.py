@@ -166,9 +166,6 @@ class Importable(object):
         0
 
         """
-        has_changed = False
-        sentinel = object()
-        super_ = super(Importable, self)
         content_attrs = self._content_attrs
         for attr_name, value in kwargs.items():
             if attr_name not in content_attrs:
@@ -176,6 +173,13 @@ class Importable(object):
                     'Attribute %s is not part of the element content.'
                     % attr_name
                 )
+        return self._update(kwargs)
+
+    def _update(self, attrs):
+        has_changed = False
+        sentinel = object()
+        super_ = super(Importable, self)
+        for attr_name, value in attrs.items():
             if not has_changed:
                 current_value = getattr(self, attr_name, sentinel)
                 # Sentinel will also be different
@@ -253,15 +257,15 @@ class Importable(object):
         return self._sync(self._content_attrs, other)
 
     def _sync(self, content_attrs, other):
-        kwargs = {}
+        attrs = {}
         for attr in content_attrs:
             try:
                 that = getattr(other, attr)
             except AttributeError:
                 continue
             else:
-                kwargs[attr] = that
-        return self.update(**kwargs)
+                attrs[attr] = that
+        return self._update(attrs)
 
     def register(self, listener):
         """Register a callable to be notified when ``sync`` changes data.
@@ -322,11 +326,10 @@ class Importable(object):
 
 
 class _Original(Importable):
-    # This class has __dict__ enabled so _content_attrs can be overriden for
-    # each instance.
-    def __init__(self, content_attrs, *args, **kwargs):
-        self._content_attrs = content_attrs
-        super(_Original, self).__init__(*args, **kwargs)
+
+    def copy(self, other):
+        self.__dict__.clear()
+        self._sync(other._content_attrs, other)
 
 
 class RecordingImportable(Importable):
@@ -342,6 +345,7 @@ class RecordingImportable(Importable):
 
     def __init__(self, *args, **kwargs):
         super(RecordingImportable, self).__init__(*args, **kwargs)
+        self._original = _Original(self.natural_key)
         self.reset()
 
     @property
@@ -369,6 +373,10 @@ class RecordingImportable(Importable):
         'aa'
         >>> i.orig.a
         'a'
+        >>> del i.a
+        >>> i.reset()
+        >>> hasattr(i.orig, 'a')
+        False
 
         """
         return self._original
@@ -392,7 +400,4 @@ class RecordingImportable(Importable):
         'aa'
 
         """
-        # Create new instance since _content_attrs can shrunk in time and we
-        # need not keep values that are not in that list anymore.
-        self._original = _Original(self._content_attrs, self.natural_key)
-        self._original.sync(self)
+        self._original.copy(self)
