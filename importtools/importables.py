@@ -327,9 +327,9 @@ class Importable(object):
 
 class _Original(Importable):
 
-    def copy(self, other):
+    def copy(self, content_attrs, other):
         self.__dict__.clear()
-        self._sync(other._content_attrs, other)
+        self._sync(content_attrs, other)
 
 
 class RecordingImportable(Importable):
@@ -400,4 +400,4 @@ class RecordingImportable(Importable):
         'aa'
 
         """
-        self._original.copy(self)
+        self._original.copy(self._content_attrs, self)
