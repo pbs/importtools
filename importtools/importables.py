@@ -35,25 +35,41 @@ class _AutoContent(type):
         # XXX: py3
         if isinstance(ca, basestring):
             raise ValueError(
-                '%s must be an iterable not a string.' % _magic_name
-            )
+                    '%s must be an iterable not a string.' % _magic_name
+                    )
 
         try:
             ca = frozenset(ca)
         except TypeError:
             raise ValueError('%s must be iterable.' % _magic_name)
 
-        def _init_(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs):
             update_kwargs = {}
             for content_attr in self._content_attrs:
                 try:
                     update_kwargs[content_attr] = kwargs.pop(content_attr)
                 except KeyError:
                     pass  # All arguments are optional
+            self._update(update_kwargs)
             super(klass, self).__init__(*args, **kwargs)
-            self.update(**update_kwargs)
 
-        d['__init__'] = _init_
+        def __repr__(self):
+            attrs = []
+            for attr_name in self._content_attrs:
+                try:
+                    attr_value = getattr(self, attr_name)
+                except AttributeError:
+                    continue
+                attrs.append('%s=%r' % (attr_name, attr_value))
+            if attrs:
+                cls_name = self.__class__.__name__
+                return '%s(%r, %s)' % (
+                    cls_name, self._natural_key, ', '.join(attrs)
+                )
+            return super(klass, self).__repr__()
+
+        d['__init__'] = __init__
+        d.setdefault('__repr__', __repr__)
         d['__slots__'] = frozenset(d.get('__slots__', [])) | ca
         d['_content_attrs'] = ca
 
@@ -117,6 +133,30 @@ class Importable(object):
     >>> i.a is l
     True
 
+    There is also a shortcut for defining new ``Importable`` classes other than
+    using inheritance by setting ``__content_attrs__`` to an iterable of
+    attribute names. This will automatically create a constructor for your
+    class that accepts all values in the list as keyword arguments. It also
+    sets ```_content_attrs`` and ``__slots__`` to include this values and
+    generates a ``__repr__`` for you. This method however may not fit all your
+    needs, in that case subclassing ``Importable`` is still your best option.
+
+    >>> class MockImportable(Importable):
+    ...     __content_attrs__ = ['a', 'b']
+
+    >>> MockImportable(0)
+    MockImportable(0)
+
+    >>> MockImportable(0, a=1, b=('a', 'b'))
+    MockImportable(0, a=1, b=('a', 'b'))
+
+    >>> i = MockImportable(0, a=1)
+    >>> i.b = 2
+    >>> i.a, i.b
+    (1, 2)
+    >>> i.update(a=100, b=200)
+    True
+
     """
 
     __metaclass__ = _AutoContent
@@ -124,7 +164,7 @@ class Importable(object):
     _content_attrs = frozenset([])
 
     def __init__(self, natural_key, *args, **kwargs):
-        self._listeners = set()
+        self._listeners = []
         self._natural_key = natural_key
         super(Importable, self).__init__(*args, **kwargs)
 
@@ -170,10 +210,13 @@ class Importable(object):
         for attr_name, value in kwargs.items():
             if attr_name not in content_attrs:
                 raise ValueError(
-                    'Attribute %s is not part of the element content.'
-                    % attr_name
-                )
-        return self._update(kwargs)
+                        'Attribute %s is not part of the element content.'
+                        % attr_name
+                        )
+        has_changed = self._update(kwargs)
+        if has_changed:
+            self._notify()
+        return has_changed
 
     def _update(self, attrs):
         has_changed = False
@@ -186,8 +229,6 @@ class Importable(object):
                 if current_value != value:
                     has_changed = True
             super_.__setattr__(attr_name, value)
-        if has_changed:
-            self._notify()
         return has_changed
 
     def sync(self, other):
@@ -254,7 +295,10 @@ class Importable(object):
         False
 
         """
-        return self._sync(self._content_attrs, other)
+        has_changed = self._sync(self._content_attrs, other)
+        if has_changed:
+            self._notify()
+        return has_changed
 
     def _sync(self, content_attrs, other):
         attrs = {}
@@ -278,10 +322,20 @@ class Importable(object):
         Traceback (most recent call last):
         ValueError:
 
+        Same listener can register multiple times:
+
+        >>> notifications = []
+        >>> listener = lambda x: notifications.append(x)
+        >>> i.register(listener)
+        >>> i.register(listener)
+        >>> i._notify()
+        >>> notifications[0] is notifications[1] is i
+        True
+
         """
         if not callable(listener):
             raise ValueError('Listener is not callable: %s' % listener)
-        self._listeners.add(listener)
+        self._listeners.append(listener)
 
     def is_registered(self, listener):
         """Check if the listener is already registered.
@@ -314,15 +368,15 @@ class Importable(object):
     def __repr__(self):
         """
         >>> Importable((1, 'a'))
-        Importable((1, 'a'), ...)
+        Importable((1, 'a'))
 
-        >>> class TestImportable(Importable): pass
-        >>> TestImportable('xyz')
-        TestImportable('xyz', ...)
+        >>> class MockImportable(Importable): pass
+        >>> MockImportable('xyz')
+        MockImportable('xyz')
 
         """
         cls_name = self.__class__.__name__
-        return '%s(%r, ...)' % (cls_name, self._natural_key)
+        return '%s(%r)' % (cls_name, self._natural_key)
 
 
 class _Original(Importable):
@@ -338,6 +392,27 @@ class RecordingImportable(Importable):
     This class records the original values that the attributes had before
     any change introduced by attribute assignment or call to ``update`` and
     ``sync``.
+
+    Just as in :py:class:`Importable` case you can define new classes using
+    ``__content_attrs__`` as a shortcut.
+
+    >>> class MockImportable(RecordingImportable):
+    ...     __content_attrs__ = ['a', 'b']
+
+    >>> MockImportable(0)
+    MockImportable(0)
+
+    >>> MockImportable(0, a=1, b=('a', 'b'))
+    MockImportable(0, a=1, b=('a', 'b'))
+
+    >>> i = MockImportable(0, a=1)
+    >>> i.b = 2
+    >>> i.a, i.b
+    (1, 2)
+    >>> i.update(a=100, b=200)
+    True
+    >>> i.orig.a
+    1
 
     """
 
