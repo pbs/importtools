@@ -27,7 +27,7 @@ API Reference
    :maxdepth: 2
 
    importables
-..   datasets
+   datasets
 ..   loaders
 ..   sync
 ..   shortcuts
