@@ -24,6 +24,18 @@ __all__ = ['Importable', 'RecordingImportable']
 
 
 class _AutoContent(type):
+    """
+    >>> class MockImportable(Importable):
+    ...     __content_attrs__ = 'attr' # doctest:+IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+    ValueError:
+
+    >>> class MockImportable(Importable):
+    ...     __content_attrs__ = 123 # doctest:+IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+    ValueError:
+
+    """
 
     def __new__(cls, name, bases, d):
         _magic_name = '__content_attrs__'
@@ -141,6 +153,10 @@ class Importable(object):
     generates a ``__repr__`` for you. This method however may not fit all your
     needs, in that case subclassing ``Importable`` is still your best option.
 
+    One thing to keep in mind is that it's not possible to dinamicaly change
+    ``_content_attrs`` for instances created from this class because of the
+    ``__slots__`` usage.
+
     >>> class MockImportable(Importable):
     ...     __content_attrs__ = ['a', 'b']
 
@@ -204,6 +220,13 @@ class Importable(object):
         False
         >>> len(notifications)
         0
+
+        Trying to call update using keywords that are not present in
+        ``_content_attrs`` souhld raise ``ValueError``:
+
+        >>> i.update(c=1) # doctest:+IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        ValueError:
 
         """
         content_attrs = self._content_attrs
