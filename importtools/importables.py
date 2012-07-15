@@ -149,7 +149,7 @@ class Importable(object):
     using inheritance by setting ``__content_attrs__`` to an iterable of
     attribute names. This will automatically create a constructor for your
     class that accepts all values in the list as keyword arguments. It also
-    sets ```_content_attrs`` and ``__slots__`` to include this values and
+    sets ``_content_attrs`` and ``__slots__`` to include this values and
     generates a ``__repr__`` for you. This method however may not fit all your
     needs, in that case subclassing ``Importable`` is still your best option.
 
