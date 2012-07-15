@@ -480,7 +480,7 @@ class RecordingImportable(Importable):
         return self._original
 
     def reset(self):
-        """Forget all memorized changes.
+        """Create a snapshot of the current values.
 
         >>> class MockImportable(RecordingImportable):
         ...   _content_attrs = ['a']
