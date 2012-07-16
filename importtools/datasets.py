@@ -132,7 +132,6 @@ class RecordingDataSet(SimpleDataSet):
     allows optimal persistence of the changes by grouping them in a way suited
     for batch processing.
 
-
     """
     def __init__(self, data_loader=tuple(), *args, **kwargs):
         self._added = set()
