@@ -138,7 +138,6 @@ class RecordingDataSet(SimpleDataSet):
         self._added = set()
         self._removed = set()
         self._changed = set()
-
         super(SimpleDataSet, self).__init__(
             self._registered_elements(data_loader),
             *args, **kwargs
