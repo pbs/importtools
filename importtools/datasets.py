@@ -9,7 +9,6 @@ structure serves as both input and output argument for the algorithm.
 """
 
 import abc
-import itertools
 
 
 __all__ = ['DataSet', 'SimpleDataSet']
@@ -135,34 +134,34 @@ class RecordingDataSet(SimpleDataSet):
 
 
     """
-    def __init__(self, data_loader=None, *args, **kwargs):
-        self._added = SimpleDataSet()
-        self._removed = SimpleDataSet()
+    def __init__(self, data_loader=tuple(), *args, **kwargs):
+        self._added = set()
+        self._removed = set()
         self._changed = set()
-        # XXX for some reason dict subclass methods can't be hashed
-        self.rc = lambda x: self.register_change(x)
-        super(DiffDataSet, self).__init__(
-            element.register_listener(self.rc) or element
-            for element in data_loader,
+
+        super(SimpleDataSet, self).__init__(
+            self._registered_elements(data_loader),
             *args, **kwargs
         )
 
-    def __repr__(self):
-        result = '<%s: %d changed, %d added, %d removed>'
-        instance_cls = self.__class__.__name__
-        c = map(len, [self._changed, self._added, self._removed])
-        return result % tuple([instance_cls] + c)
+    def _registered_elements(self, data_loader):
+        rc = self.register_change
+        for element in data_loader:
+            element.register_listener(rc)
+        yield element
 
     def add(self, importable):
         if importable in self._removed:
             self._removed.discard(importable)
             self._changed.add(importable)
         else:
+            if not importable.is_registered(self.register_change):
+                importable.register(self.register_change)
             self._added.add(importable)
-        super(DiffDataSet, self).add(importable.register_listener(self.rc))
+        super(SimpleDataSet, self).add(importable)
 
     def pop(self, importable):
-        i = super(DiffDataSet, self).pop(importable)
+        i = super(SimpleDataSet, self).pop(importable)
         if importable in self._added:
             self._added.discard(importable)
         else:
@@ -193,3 +192,5 @@ class RecordingDataSet(SimpleDataSet):
     def changed(self):
         """An iterable of all changed elements in the dataset."""
         return iter(self._changed)
+
+
