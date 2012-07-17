@@ -178,6 +178,7 @@ class Importable(object):
     __metaclass__ = _AutoContent
     __slots__ = ('_listeners', '_natural_key')
     _content_attrs = frozenset([])
+    _sentinel = object()
 
     def __init__(self, natural_key, *args, **kwargs):
         self._listeners = []
@@ -243,12 +244,11 @@ class Importable(object):
 
     def _update(self, attrs):
         has_changed = False
-        sentinel = object()
         super_ = super(Importable, self)
         for attr_name, value in attrs.items():
             if not has_changed:
-                current_value = getattr(self, attr_name, sentinel)
-                # Sentinel will also be different
+                current_value = getattr(self, attr_name, self._sentinel)
+                # object() sentinel will also be different
                 if current_value != value:
                     has_changed = True
             super_.__setattr__(attr_name, value)

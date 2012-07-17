@@ -43,7 +43,7 @@ class DataSet(object):
         """Add or replace the element in the dataset."""
 
     @abc.abstractmethod
-    def pop(self, element):
+    def pop(self, element, default=None):
         """Remove and return an equal element from the dataset."""
 
 
@@ -71,6 +71,10 @@ class SimpleDataSet(dict, DataSet):
     True
     >>> sds.get(i3, 'default')
     'default'
+    >>> sds.pop(i3, 'default')
+    'default'
+    >>> sds.pop(i1)
+    Importable(0)
 
     An iterable containing the initial data can be passed when constructing
     intances:
@@ -103,8 +107,12 @@ class SimpleDataSet(dict, DataSet):
             if k is not v:
                 raise ValueError(err % (k, v))
 
-    def add(self, importable):
-        self[importable] = importable
+    def add(self, element):
+        self[element] = element
+
+    def pop(self, element, default=None):
+        # By default the dict pop doesn't take a default and raises key error.
+        return super(SimpleDataSet, self).pop(element, default)
 
     def __repr__(self):
         """
@@ -133,9 +141,12 @@ class RecordingDataSet(SimpleDataSet):
     for batch processing.
 
     """
+
+    _sentinel = object()
+
     def __init__(self, data_loader=tuple(), *args, **kwargs):
-        self._added = set()
-        self._removed = set()
+        self._added = SimpleDataSet()
+        self._removed = SimpleDataSet()
         self._changed = set()
         super(SimpleDataSet, self).__init__(
             self._registered_elements(data_loader),
@@ -148,33 +159,67 @@ class RecordingDataSet(SimpleDataSet):
             element.register_listener(rc)
         yield element
 
-    def add(self, importable):
-        if importable in self._removed:
-            self._removed.discard(importable)
-            self._changed.add(importable)
-        else:
-            if not importable.is_registered(self.register_change):
-                importable.register(self.register_change)
-            self._added.add(importable)
-        super(SimpleDataSet, self).add(importable)
+    def add(self, element):
+        sentinel = self._sentinel
+        existing = self.get(element, sentinel)
 
-    def pop(self, importable):
-        i = super(SimpleDataSet, self).pop(importable)
-        if importable in self._added:
-            self._added.discard(importable)
+        if existing is element:
+            return
+
+        added = self._added
+
+        # Add a new element in the set.
+        if existing is sentinel:
+            added.add(element)
+            super(SimpleDataSet, self).add(element)
+            return
+
+        # There is already an equal element in the set
+
+        removed = self._removed
+        removed_e = removed.get(element, sentinel)
+        added_e = added.get(element, sentinel)
+
+        # This element was not present at the beginning but was already added
+        # at least once. We override it and register the current one as new.
+        if added_e is not sentinel and removed_e is sentinel:
+            added.add(element)
+
+        # An equal element was deleted and another one added
+        if added_e is sentinel and removed_e is sentinel:
+            added.add(element)
+
+        # The existing element was never changed and was in the set from the
+        # beginning. We must set this as deleted and the new one as added.
+        if removed_e is sentinel:
+            removed.add(existing)
+            added.add(element)
+
+        # We are adding back the same element that was there from
+        # the beginning. Undo all recorded changes.
+        elif removed_e is element:
+            removed.pop(element, None)
+            added.pop(element, None)
+
+        super(SimpleDataSet, self).add(element)
+
+    def pop(self, element):
+        i = super(SimpleDataSet, self).pop(element)
+        if element in self._added:
+            self._added.discard(element)
         else:
             self._removed.add(i)
         return i
 
-    def register_change(self, importable):
+    def register_change(self, element):
         """Mark an element in the current dataset as changed.
 
         This method is registered as a listener for changes in all the
         elements of the wrapped :py:class:`DataSet`.
 
         """
-        assert importable in self
-        self._changed.add(importable)
+        assert element in self
+        self._changed.add(element)
 
     @property
     def added(self):
@@ -190,5 +235,3 @@ class RecordingDataSet(SimpleDataSet):
     def changed(self):
         """An iterable of all changed elements in the dataset."""
         return iter(self._changed)
-
-
