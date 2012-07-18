@@ -230,7 +230,39 @@ class RecordingDataSet(SimpleDataSet):
         super(RecordingDataSet, self).add(element)
 
     def pop(self, element, default=None):
-        pass
+        """
+        >>> rds = RecordingDataSet()
+        >>> rds.pop(1, 'default')
+        'default'
+
+        >>> rds.add(1)
+        >>> rds.add(2)
+        >>> rds.pop(1)
+        1
+        >>> next(rds.added) == 2
+        True
+        >>> len(list(rds.removed)) is 0
+        True
+        >>> rds.reset()
+        >>> rds.pop(2)
+        2
+        >>> len(list(rds.added)) is 0
+        True
+        >>> next(rds.removed) == 2
+        True
+
+        """
+        sentinel = self._sentinel
+        e = super(RecordingDataSet, self).pop(element, sentinel)
+
+        if e is sentinel:
+            return default
+
+        a_element = self._added.pop(element, sentinel)
+        if a_element is sentinel:
+            self._removed.add(element)
+
+        return e
 
     def register_change(self, element):
         """Mark an element in the current dataset as changed.
