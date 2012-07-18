@@ -143,7 +143,7 @@ class RecordingDataSet(SimpleDataSet):
     A :py:class:`DataSet` implementation that remembers all the changes,
     additions and removals done to it.
 
-    Using a :py:class:`DiffDataSet` as the destination of the import algorithm
+    Using instances of this calss as the destination of the import algorithm
     allows optimal persistence of the changes by grouping them in a way suited
     for batch processing.
 
