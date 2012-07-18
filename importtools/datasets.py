@@ -168,7 +168,6 @@ class RecordingDataSet(SimpleDataSet):
 
     def add(self, element):
         """
-
         >>> rds = RecordingDataSet()
         >>> rds.add(1)
         >>> rds.add(2)
@@ -201,7 +200,6 @@ class RecordingDataSet(SimpleDataSet):
         True
 
         """
-
         sentinel = self._sentinel
         existing = self.get(element, sentinel)
 
@@ -279,6 +277,11 @@ class RecordingDataSet(SimpleDataSet):
         super(RecordingDataSet, self).clear()
 
     def reset(self):
+        """Forget all recorded changes.
+
+        Calling this method will empty out `added`, `removed` and `changed`.
+
+        """
         self._added.clear()
         self._removed.clear()
         self._changed.clear()
