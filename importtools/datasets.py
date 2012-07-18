@@ -281,6 +281,10 @@ class RecordingDataSet(SimpleDataSet):
         Calling this method will empty out `added`, `removed` and `changed`.
 
         """
+        rc = self._register_change
+        for element in self._added:
+            if not element.is_registered(rc):
+                element.register(rc)
         self._added.clear()
         self._removed.clear()
         self._changed.clear()
@@ -297,5 +301,13 @@ class RecordingDataSet(SimpleDataSet):
 
     @property
     def changed(self):
-        """An iterable of all changed elements in the dataset."""
+        """An iterable of all elements that have been changed.
+
+        Only the elements that were part of the set from the beginning or
+        before the last call to reset will be tracked. Deleting an element that
+        has changed will not remove it from this list. This means it's possible
+        for an element to be present in both ``changed`` and ``removed``
+        iterables.
+
+        """
         return iter(self._changed)
