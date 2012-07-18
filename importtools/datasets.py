@@ -269,7 +269,6 @@ class RecordingDataSet(SimpleDataSet):
         elements of the wrapped :py:class:`DataSet`.
 
         """
-        assert element in self
         self._changed.add(element)
 
     def clear(self):
