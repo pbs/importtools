@@ -12,3 +12,11 @@ DataSet Containers
 
 .. autoclass:: SimpleDataSet
   :show-inheritance:
+
+.. autoclass:: RecordingDataSet
+  :show-inheritance:
+
+  .. automethod:: reset
+  .. autoattribute:: added
+  .. autoattribute:: removed
+  .. autoattribute:: changed
