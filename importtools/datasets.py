@@ -155,7 +155,7 @@ class RecordingDataSet(SimpleDataSet):
         self._added = SimpleDataSet()
         self._removed = SimpleDataSet()
         self._changed = set()
-        super(SimpleDataSet, self).__init__(
+        super(RecordingDataSet, self).__init__(
             self._registered_elements(data_loader),
             *args, **kwargs
         )
@@ -163,7 +163,7 @@ class RecordingDataSet(SimpleDataSet):
     def _registered_elements(self, data_loader):
         rc = self._register_change
         for element in data_loader:
-            element.register_listener(rc)
+            element.register(rc)
             yield element
 
     def add(self, element):
