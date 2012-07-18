@@ -11,7 +11,7 @@ structure serves as both input and output argument for the algorithm.
 import abc
 
 
-__all__ = ['DataSet', 'SimpleDataSet']
+__all__ = ['DataSet', 'SimpleDataSet', 'RecordingDataSet']
 
 
 class DataSet(object):
