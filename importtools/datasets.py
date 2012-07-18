@@ -46,6 +46,10 @@ class DataSet(object):
     def pop(self, element, default=None):
         """Remove and return an equal element from the dataset."""
 
+    @abc.abstractmethod
+    def clear(self):
+        """Empty the dataset."""
+
 
 class SimpleDataSet(dict, DataSet):
     """A simple :py:class:`dict`-based :py:class:`DataSet` implementation.
@@ -114,6 +118,9 @@ class SimpleDataSet(dict, DataSet):
         # By default the dict pop doesn't take a default and raises key error.
         return super(SimpleDataSet, self).pop(element, default)
 
+    def __iter__(self):
+        return iter(self.values())
+
     def __repr__(self):
         """
         >>> SimpleDataSet()
@@ -157,59 +164,73 @@ class RecordingDataSet(SimpleDataSet):
         rc = self.register_change
         for element in data_loader:
             element.register_listener(rc)
-        yield element
+            yield element
 
     def add(self, element):
+        """
+
+        >>> rds = RecordingDataSet()
+        >>> rds.add(1)
+        >>> rds.add(2)
+        >>> sorted(list(rds.added))
+        [1, 2]
+        >>> rds.clear()
+        >>> t1, t2, t3 = tuple([1]), tuple([1]), tuple([1])
+        >>> rds.add(t1)
+        >>> next(rds.added) is t1
+        True
+        >>> rds.add(t2)
+        >>> next(rds.added) is t2
+        True
+        >>> rds.reset()
+        >>> rds.add(t1)
+        >>> next(rds.added) is t1
+        True
+        >>> next(rds.removed) is t2
+        True
+        >>> rds.add(t2)
+        >>> len(list(rds.added)) is 0
+        True
+        >>> len(list(rds.removed)) is 0
+        True
+        >>> rds.add(t1)
+        >>> rds.add(t3)
+        >>> next(rds.added) is t3
+        True
+        >>> next(rds.removed) is t2
+        True
+
+        """
+
         sentinel = self._sentinel
         existing = self.get(element, sentinel)
 
+        # Tring to add the same element that is already in the set. Nothing
+        # should happen.
         if existing is element:
             return
 
-        added = self._added
+        d_element = self._removed.get(element, sentinel)
 
-        # Add a new element in the set.
-        if existing is sentinel:
-            added.add(element)
-            super(SimpleDataSet, self).add(element)
+        # We are adding back an element that was part of the set from the
+        # beginning. Forget all possible changes recorded.
+        if d_element is element:
+            self._removed.pop(element)
+            self._added.pop(element)
+            super(RecordingDataSet, self).add(element)
             return
 
-        # There is already an equal element in the set
+        a_element = self._added.get(element, sentinel)
 
-        removed = self._removed
-        removed_e = removed.get(element, sentinel)
-        added_e = added.get(element, sentinel)
+        # If we are replacing an original element mark it as deleted.
+        if a_element is sentinel and existing is not sentinel:
+            self._removed.add(existing)
 
-        # This element was not present at the beginning but was already added
-        # at least once. We override it and register the current one as new.
-        if added_e is not sentinel and removed_e is sentinel:
-            added.add(element)
+        self._added.add(element)
+        super(RecordingDataSet, self).add(element)
 
-        # An equal element was deleted and another one added
-        if added_e is sentinel and removed_e is sentinel:
-            added.add(element)
-
-        # The existing element was never changed and was in the set from the
-        # beginning. We must set this as deleted and the new one as added.
-        if removed_e is sentinel:
-            removed.add(existing)
-            added.add(element)
-
-        # We are adding back the same element that was there from
-        # the beginning. Undo all recorded changes.
-        elif removed_e is element:
-            removed.pop(element, None)
-            added.pop(element, None)
-
-        super(SimpleDataSet, self).add(element)
-
-    def pop(self, element):
-        i = super(SimpleDataSet, self).pop(element)
-        if element in self._added:
-            self._added.discard(element)
-        else:
-            self._removed.add(i)
-        return i
+    def pop(self, element, default=None):
+        pass
 
     def register_change(self, element):
         """Mark an element in the current dataset as changed.
@@ -220,6 +241,15 @@ class RecordingDataSet(SimpleDataSet):
         """
         assert element in self
         self._changed.add(element)
+
+    def clear(self):
+        self.reset()
+        super(RecordingDataSet, self).clear()
+
+    def reset(self):
+        self._added.clear()
+        self._removed.clear()
+        self._changed.clear()
 
     @property
     def added(self):
