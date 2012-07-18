@@ -161,7 +161,7 @@ class RecordingDataSet(SimpleDataSet):
         )
 
     def _registered_elements(self, data_loader):
-        rc = self.register_change
+        rc = self._register_change
         for element in data_loader:
             element.register_listener(rc)
             yield element
@@ -264,7 +264,7 @@ class RecordingDataSet(SimpleDataSet):
 
         return e
 
-    def register_change(self, element):
+    def _register_change(self, element):
         """Mark an element in the current dataset as changed.
 
         This method is registered as a listener for changes in all the
