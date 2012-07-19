@@ -383,10 +383,26 @@ class Importable(object):
         return hash(self._natural_key)
 
     def __eq__(self, other):
-        return self._natural_key == other.natural_key
+        """
+        >>> Importable(0) == None
+        False
+
+        """
+        try:
+            return self._natural_key == other.natural_key
+        except AttributeError:
+            return NotImplemented
 
     def __lt__(self, other):
-        return self._natural_key < other.natural_key
+        """
+        >>> Importable(0) < None
+        False
+
+        """
+        try:
+            return self._natural_key < other.natural_key
+        except AttributeError:
+            return NotImplemented
 
     def __repr__(self):
         """

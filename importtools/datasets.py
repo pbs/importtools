@@ -94,6 +94,9 @@ class SimpleDataSet(dict, DataSet):
     ValueError:
 
     """
+
+    _sentinel = object()
+
     def __init__(self, data_loader=None, *args, **kwargs):
         if data_loader is None:
             data_loader = ()
@@ -135,7 +138,44 @@ class SimpleDataSet(dict, DataSet):
 
         """
         cls_name = self.__class__.__name__
-        return '%s(%r)' % (cls_name, sorted(list(self)))
+        return '%s(%r)' % (cls_name, sorted(self))
+
+    def sync(self, iterable):
+        """Add, remove and update this elements with those in the iterable.
+
+        >>> from importtools import Importable
+
+        >>> sds = SimpleDataSet()
+        >>> sds.sync([Importable(0), Importable(1)])
+        >>> sds
+        SimpleDataSet([Importable(0), Importable(1)])
+
+        >>> sds.sync([Importable(1), Importable(3)])
+        >>> sds
+        SimpleDataSet([Importable(1), Importable(3)])
+
+
+        >>> class MockImportable(Importable):
+        ...     __content_attrs__ = ['a']
+
+        >>> i1, i2 = MockImportable(0, a=1), MockImportable(0, a=2)
+        >>> sds = SimpleDataSet([i1])
+        >>> sds.sync([i2])
+        >>> sds
+        SimpleDataSet([MockImportable(0, a=2)])
+
+        """
+        sentinel = self._sentinel
+        other = set(iterable)
+        for element in other:
+            existing = self.get(element, sentinel)
+            if existing is sentinel:
+                self.add(element)
+            else:
+                existing.sync(element)
+        for existing in self:
+            if existing not in other:
+                self.pop(existing)
 
 
 class RecordingDataSet(SimpleDataSet):
@@ -148,8 +188,6 @@ class RecordingDataSet(SimpleDataSet):
     for batch processing.
 
     """
-
-    _sentinel = object()
 
     def __init__(self, data_loader=tuple(), *args, **kwargs):
         self._added = SimpleDataSet()
@@ -168,13 +206,14 @@ class RecordingDataSet(SimpleDataSet):
 
     def add(self, element):
         """
+        >>> from importables import Importable
         >>> rds = RecordingDataSet()
-        >>> rds.add(1)
-        >>> rds.add(2)
+        >>> rds.add(Importable(1))
+        >>> rds.add(Importable(2))
         >>> sorted(list(rds.added))
-        [1, 2]
+        [Importable(1), Importable(2)]
         >>> rds.clear()
-        >>> t1, t2, t3 = tuple([1]), tuple([1]), tuple([1])
+        >>> t1, t2, t3 = Importable(1), Importable(1), Importable(1)
         >>> rds.add(t1)
         >>> next(rds.added) is t1
         True
@@ -229,24 +268,26 @@ class RecordingDataSet(SimpleDataSet):
 
     def pop(self, element, default=None):
         """
+        >>> from importtools import Importable
+
         >>> rds = RecordingDataSet()
-        >>> rds.pop(1, 'default')
+        >>> rds.pop(object(), 'default')
         'default'
 
-        >>> rds.add(1)
-        >>> rds.add(2)
-        >>> rds.pop(1)
-        1
-        >>> next(rds.added) == 2
+        >>> rds.add(Importable(1))
+        >>> rds.add(Importable(2))
+        >>> rds.pop(Importable(1))
+        Importable(1)
+        >>> next(rds.added) == Importable(2)
         True
         >>> len(list(rds.removed)) is 0
         True
         >>> rds.reset()
-        >>> rds.pop(2)
-        2
+        >>> rds.pop(Importable(2))
+        Importable(2)
         >>> len(list(rds.added)) is 0
         True
-        >>> next(rds.removed) == 2
+        >>> next(rds.removed) == Importable(2)
         True
 
         """
