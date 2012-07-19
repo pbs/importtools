@@ -1,3 +1,6 @@
+import heapq
+import itertools
+
 from importtools.importables import *
 from importtools.datasets import *
 
