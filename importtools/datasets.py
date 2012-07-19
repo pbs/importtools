@@ -143,7 +143,7 @@ class RecordingDataSet(SimpleDataSet):
     A :py:class:`DataSet` implementation that remembers all the changes,
     additions and removals done to it.
 
-    Using a :py:class:`DiffDataSet` as the destination of the import algorithm
+    Using instances of this calss as the destination of the import algorithm
     allows optimal persistence of the changes by grouping them in a way suited
     for batch processing.
 
@@ -155,7 +155,7 @@ class RecordingDataSet(SimpleDataSet):
         self._added = SimpleDataSet()
         self._removed = SimpleDataSet()
         self._changed = set()
-        super(SimpleDataSet, self).__init__(
+        super(RecordingDataSet, self).__init__(
             self._registered_elements(data_loader),
             *args, **kwargs
         )
@@ -163,7 +163,7 @@ class RecordingDataSet(SimpleDataSet):
     def _registered_elements(self, data_loader):
         rc = self._register_change
         for element in data_loader:
-            element.register_listener(rc)
+            element.register(rc)
             yield element
 
     def add(self, element):
@@ -281,6 +281,10 @@ class RecordingDataSet(SimpleDataSet):
         Calling this method will empty out `added`, `removed` and `changed`.
 
         """
+        rc = self._register_change
+        for element in self._added:
+            if not element.is_registered(rc):
+                element.register(rc)
         self._added.clear()
         self._removed.clear()
         self._changed.clear()
@@ -297,5 +301,13 @@ class RecordingDataSet(SimpleDataSet):
 
     @property
     def changed(self):
-        """An iterable of all changed elements in the dataset."""
+        """An iterable of all elements that have been changed.
+
+        Only the elements that were part of the set from the beginning or
+        before the last call to reset will be tracked. Deleting an element that
+        has changed will not remove it from this list. This means it's possible
+        for an element to be present in both ``changed`` and ``removed``
+        iterables.
+
+        """
         return iter(self._changed)
