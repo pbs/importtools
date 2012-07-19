@@ -9,6 +9,7 @@ DataSet Containers
   .. automethod:: get
   .. automethod:: add
   .. automethod:: pop
+  .. automethod:: sync
 
 .. autoclass:: SimpleDataSet
   :show-inheritance:

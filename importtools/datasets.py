@@ -50,6 +50,10 @@ class DataSet(object):
     def clear(self):
         """Empty the dataset."""
 
+    @abc.abstractmethod
+    def sync(self, iterable):
+        """Add, remove and update this elements with those in the iterable."""
+
 
 class SimpleDataSet(dict, DataSet):
     """A simple :py:class:`dict`-based :py:class:`DataSet` implementation.
@@ -141,8 +145,7 @@ class SimpleDataSet(dict, DataSet):
         return '%s(%r)' % (cls_name, sorted(self))
 
     def sync(self, iterable):
-        """Add, remove and update this elements with those in the iterable.
-
+        """
         >>> from importtools import Importable
 
         >>> sds = SimpleDataSet()
