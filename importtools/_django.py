@@ -1,7 +1,7 @@
 """This module contains a Django ORM specific loader.
 
 It can be used to load a bunch of ordered rows directly from the DB using a
-buffer. The resulting row data can be than used to generate Importable
+buffer. The resulting row data can be than used to generate ``Importable``
 instances used to create ``DataSet`` instances.
 
 """
