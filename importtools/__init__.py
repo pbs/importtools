@@ -4,6 +4,11 @@ import itertools
 from importtools.importables import *
 from importtools.datasets import *
 
+try:
+    from importtools._django import *
+except ImportError:
+    pass
+
 
 def chunked_mem_sync(source_loader, destination_loader,
                      DSFactory=RecordingDataSet, hint=16384):
