@@ -22,8 +22,7 @@ class DjangoLoader(object):
     def _get_basic_q(self):
         all_fields = list(self._content_attrs) + list(self._natural_key_attrs)
         q = self._model.objects.all().select_for_update()
-        q = q.values(**all_fields)
-        return q
+        return q.values(**all_fields)
 
     def _yield_from_q(self, q):
         for row in q:
