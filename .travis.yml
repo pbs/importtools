@@ -6,7 +6,11 @@ python:
     - pypy
 #    - 3.2
 
-script: python setup.py nosetests --exclude django_tests
+install:
+    - "pip install django>=1.4" # For testing optional django support
+    - "pip install -e ."        # Needs to be installed so we can specify settings location
+
+script: python setup.py nosetests --exclude django_tests && django-admin.py test --settings=importtools.django_tests.settings
 
 notifications:
   email:
