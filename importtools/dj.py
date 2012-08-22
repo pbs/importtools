@@ -22,7 +22,7 @@ class DjangoLoader(object):
     def _get_basic_q(self):
         all_fields = list(self._content_attrs) + list(self._natural_key_attrs)
         q = self._model.objects.all().select_for_update()
-        return q.values(**all_fields)
+        return q.values(*all_fields)
 
     def _yield_from_q(self, q):
         for row in q:
@@ -51,7 +51,7 @@ class DjangoLoader(object):
             natural_keys = natural_keys[:-1]
             if len(natural_keys) > 0:
                 exact = []
-                for key in natural_keys[:-1]:
+                for key in natural_keys:
                     exact.append(self._make_exact(key, last_row[key]))
                 partial_filter = reduce(operator.and_, exact + [gt])
             all_partials.append(partial_filter)
@@ -75,14 +75,16 @@ class DjangoLoader(object):
         first_q = base_q[:buffer_size]
 
         count = -1
-        for count, (row_data, row) in enumerate(self._yield_from_q(first_q)):
+        for count, (row_data, row) in enumerate(
+            self._yield_from_q(first_q), 1
+        ):
             last_row = row
             yield row_data
 
         while count == buffer_size:
             q = base_q.filter(self._make_cond(last_row))[:buffer_size]
             count = -1
-            for count, (row_data, row) in enumerate(self._yield_from_q(q)):
+            for count, (row_data, row) in enumerate(self._yield_from_q(q), 1):
                 last_row = row
                 yield row_data
 

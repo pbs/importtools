@@ -5,7 +5,7 @@ from importtools.importables import *
 from importtools.datasets import *
 
 try:
-    from importtools._django import *
+    from importtools.dj import *
 except ImportError:
     pass
 
