@@ -8,8 +8,6 @@ instances used to create ``DataSet`` instances.
 
 import operator
 
-from django.db.models import Q
-
 from importtools import RecordingDataSet
 
 
@@ -35,9 +33,11 @@ class DjangoLoader(object):
             yield (tuple(natural_key), content), row
 
     def _make_gt(self, key, value):
+        from django.db.models import Q
         return Q(**{'%s__gt' % key: value})
 
     def _make_exact(self, key, value):
+        from django.db.models import Q
         return Q(**{'%s__exact' % key: value})
 
     def _make_cond(self, last_row):
