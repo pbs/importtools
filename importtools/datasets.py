@@ -113,7 +113,7 @@ class SimpleDataSet(dict, DataSet):
         # there are not duplicates.
         # The reason we can't handle duplicate elements is because we don't
         # know which one of them to use.
-        err = 'The initial list for dataset can not contain duplicates: %s %s'
+        err = 'The initial list for dataset can not contain duplicates: %r %r'
         for k, v in self.iteritems():
             if k is not v:
                 raise ValueError(err % (k, v))
@@ -167,9 +167,23 @@ class SimpleDataSet(dict, DataSet):
         >>> sds
         SimpleDataSet([MockImportable(0, a=2)])
 
+        A `ValueError` should be raised if the sync data contains
+        duplicates:
+
+        >>> i1, i2 = MockImportable(0, a=1), MockImportable(0, a=2)
+        >>> sds = SimpleDataSet()
+        >>> sds.sync([i1, i2]) # doctest:+IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        ValueError:
+
         """
         sentinel = self._sentinel
-        other = set(iterable)
+        other = set()
+        for i in iterable:
+            if i in other:
+                err = 'Syncing with an iterable that contains duplicates: %r'
+                raise ValueError(err % i)
+            other.add(i)
         for element in other:
             existing = self.get(element, sentinel)
             if existing is sentinel:
