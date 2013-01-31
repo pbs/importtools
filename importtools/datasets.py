@@ -103,7 +103,7 @@ class SimpleDataSet(dict, DataSet):
 
     def __init__(self, data_loader=None, *args, **kwargs):
         if data_loader is None:
-            data_loader = ()
+            data_loader = tuple()
         mapping = ((i, i) for i in data_loader)
         super(SimpleDataSet, self).__init__(mapping, *args, **kwargs)
         # When a new dict is created and initial data is passed in the
